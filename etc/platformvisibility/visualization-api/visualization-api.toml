@@ -1,0 +1,10 @@
+[openstack]
+# OpenStack Keystone endpoint
+auth_url="http://172.19.4.64:5000/v3"
+# User with admin role in order to call 'openstack server list --all-projects'
+username="platform-visibility"
+password="123"
+project_name="service"
+region="RegionOne"
+domain_name="default"
+endpoint_type="internal"

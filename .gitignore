@@ -1,0 +1,4 @@
+.gopath/
+build
+visualizationapi
+*.log
