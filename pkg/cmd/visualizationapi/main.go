@@ -9,6 +9,7 @@ import (
 	flag "github.com/spf13/pflag"
 
 	"visualization-api/pkg/config"
+	"visualization-api/pkg/database"
 	"visualization-api/pkg/logging"
 )
 
@@ -48,12 +49,13 @@ func cleanupOnExit() {
 func main() {
 
 	/*
-	   APP INITIALIZATION STEPS
-	   1 - initialize config module. It would read config file, env variables
-	     and flags and merge them into one structure
-	   2 - initialize io.Writer that rotates files it is writing to
-	   3 - initialize logging module with rotation writer, created in step 2
-	   4 - initialize signals handler, to close file in rotation logger
+		APP INITIALIZATION STEPS
+		1 - initialize config module. It would read config file, env variables
+			and flags and merge them into one structure
+		2 - initialize io.Writer that rotates files it is writing to
+		3 - initialize logging module with rotation writer, created in step 2
+		4 - initialize database connection
+		5 - initialize signals handler, to close file in rotation logger
 	*/
 
 	flag.Parse()
@@ -79,6 +81,18 @@ func main() {
 
 	// initialize logger
 	log.InitializeLogger(logRotate, CONF.ConsoleDebug, CONF.LogLevel)
+
+	// initialize database connection
+	databaseInitializationError := db.InitializeEngine(
+		CONF.MysqlUsername,
+		CONF.MysqlPassword,
+		CONF.MysqlHost,
+		CONF.MysqlDatabaseName,
+		CONF.MysqlPort,
+	)
+	if databaseInitializationError != nil {
+		exitWithError(databaseInitializationError)
+	}
 
 	cleanupOnExit()
 }

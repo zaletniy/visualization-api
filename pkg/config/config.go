@@ -32,12 +32,25 @@ const configDirPath = "/etc/platformvisibility/visualization-api"
 const logLevelConfigName = "log.level"
 const logFileConfigName = "log.path"
 
+const mysqlPortConfigName = "mysql.port"
+const mysqlPasswordConfigName = "mysql.password"
+const mysqlHostConfigName = "mysql.host"
+const mysqlUserConfigName = "mysql.username"
+const mysqlDatabaseConfigName = "mysql.database"
+
 // VisualizationAPIConfig is a struct that keeps all application config options
 type VisualizationAPIConfig struct {
 	// logging settings
 	LogFilePath  string
 	LogLevel     string
 	ConsoleDebug bool
+
+	// mysql settings
+	MysqlHost         string
+	MysqlPassword     string
+	MysqlUsername     string
+	MysqlDatabaseName string
+	MysqlPort         int
 }
 
 var (
@@ -51,6 +64,16 @@ func initializeCommandLineFlags() error {
 	// define flags here
 	flag.String(flagReplacer.Replace(logFileConfigName), "",
 		"Path to log file")
+	flag.String(flagReplacer.Replace(mysqlPortConfigName), "",
+		"Port mysql server is listening on")
+	flag.String(flagReplacer.Replace(mysqlPasswordConfigName), "",
+		"Password to authenticate on mysql server")
+	flag.String(flagReplacer.Replace(mysqlHostConfigName), "",
+		"Host mysql server is running on")
+	flag.String(flagReplacer.Replace(mysqlUserConfigName), "",
+		"Username to authenticate on mysql server")
+	flag.String(flagReplacer.Replace(mysqlDatabaseConfigName), "",
+		"Database to use on mysql server")
 
 	flag.Bool("debug", false, "display debug messages in stdout")
 
@@ -58,6 +81,11 @@ func initializeCommandLineFlags() error {
 
 	flagsToBind := []string{
 		logFileConfigName,
+		mysqlHostConfigName,
+		mysqlPortConfigName,
+		mysqlUserConfigName,
+		mysqlDatabaseConfigName,
+		mysqlPasswordConfigName,
 	}
 	for _, configName := range flagsToBind {
 		err := viper.BindPFlag(configName, flag.Lookup(
@@ -121,6 +149,46 @@ func InitializeConfig() error {
 			"logLevel", "level", "log", "LOG_LEVEL", "")
 	}
 	singleToneConfig.LogLevel = logLevelConfigValue
+
+	mysqlHostConfigValue := viper.GetString(
+		mysqlHostConfigName)
+	if mysqlHostConfigValue == "" {
+		return NewParseError(
+			"mysqlHost", "host", "mysql", "MYSQL_HOST", "--mysql-host")
+	}
+	singleToneConfig.MysqlHost = mysqlHostConfigValue
+
+	mysqlUserConfigValue := viper.GetString(
+		mysqlUserConfigName)
+	if mysqlUserConfigValue == "" {
+		return NewParseError(
+			"mysqlUser", "username", "mysql", "MYSQL_USERNAME", "--mysql-username")
+	}
+	singleToneConfig.MysqlUsername = mysqlUserConfigValue
+
+	mysqlPasswordConfigValue := viper.GetString(
+		mysqlPasswordConfigName)
+	if mysqlPasswordConfigValue == "" {
+		return NewParseError(
+			"MysqlPassword", "password", "mysql", "MYSQL_PASSWORD", "--mysql-password")
+	}
+	singleToneConfig.MysqlPassword = mysqlPasswordConfigValue
+
+	mysqlDatabaseConfigValue := viper.GetString(
+		mysqlDatabaseConfigName)
+	if mysqlDatabaseConfigValue == "" {
+		return NewParseError(
+			"MysqlDatabase", "database", "mysql", "MYSQL_DATABASE", "--mysql-database")
+	}
+	singleToneConfig.MysqlDatabaseName = mysqlDatabaseConfigValue
+
+	mysqlPortConfigValue := viper.GetInt(
+		mysqlPortConfigName)
+	if mysqlPortConfigValue == 0 {
+		return NewParseError(
+			"MysqlPort", "port", "mysql", "MYSQL_PORT", "--mysql-port")
+	}
+	singleToneConfig.MysqlPort = mysqlPortConfigValue
 
 	// console debug has default values - no need to check
 	singleToneConfig.ConsoleDebug = viper.GetBool(

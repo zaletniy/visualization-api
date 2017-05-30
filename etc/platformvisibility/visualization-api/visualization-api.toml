@@ -12,3 +12,10 @@ endpoint_type="internal"
 [log]
 path = "/var/log/visualization_api/visualization_api.log"
 level = "info"
+
+[mysql]
+host = "172.17.0.3"
+port = 3306
+username = "mysql"
+password = "password"
+database = "visualization_api"
