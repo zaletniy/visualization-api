@@ -11,23 +11,23 @@ const configName = "visualization-api"
 const configDirPath = "/etc/platformvisibility/visualization-api"
 
 /*
-	CONFIG NAMES
-	The following logic has 3 options to specify config value
-		1 - conf file
-		2 - env variable
-		3 - command line argument
-	Conf file values are overriden by env variables,
-	Env variables are overriden by command line arguments
+  CONFIG NAMES
+  The following logic has 3 options to specify config value
+    1 - conf file
+    2 - env variable
+    3 - command line argument
+  Conf file values are overriden by env variables,
+  Env variables are overriden by command line arguments
 
-	Example of usage:
-		given name "mysql.port":
-			* config parser would split this string by dot and would try
-				to find "port" option in "mysql" section
-			* env variables parser would replace "." to "_" and would
-				capitalize the strigs, then it would try to find the variable
-				named "MYSQL_PORT"
-			* command line parser would replace "." to "-" and look for
-				"--mysql-port" option
+  Example of usage:
+    given name "mysql.port":
+      * config parser would split this string by dot and would try
+        to find "port" option in "mysql" section
+      * env variables parser would replace "." to "_" and would
+        capitalize the strigs, then it would try to find the variable
+        named "MYSQL_PORT"
+      * command line parser would replace "." to "-" and look for
+        "--mysql-port" option
 */
 const logLevelConfigName = "log.level"
 const logFileConfigName = "log.path"
@@ -38,9 +38,6 @@ type VisualizationAPIConfig struct {
 	LogFilePath  string
 	LogLevel     string
 	ConsoleDebug bool
-
-	// version settings
-	ShowVersion bool
 }
 
 var (
@@ -49,7 +46,6 @@ var (
 
 var flagReplacer = strings.NewReplacer(".", "-", "_", "-")
 var envReplacer = strings.NewReplacer(".", "_")
-var showVersion = flag.Bool("version", false, "print version of application")
 
 func initializeCommandLineFlags() error {
 	// define flags here
@@ -129,7 +125,6 @@ func InitializeConfig() error {
 	// console debug has default values - no need to check
 	singleToneConfig.ConsoleDebug = viper.GetBool(
 		"logging.consoleDebug")
-	singleToneConfig.ShowVersion = *showVersion
 	return nil
 }
 

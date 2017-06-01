@@ -15,7 +15,7 @@ init:
 	$(GO) get github.com/spf13/pflag
 	$(GO) get github.com/op/go-logging
 	$(GO) get -u gopkg.in/alecthomas/gometalinter.v1
-	gometalinter.v1 --install
+	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --install
 	# as soon as our application does not use relative imports - source code
 	# has to be present in GOPATH to make lint work
 	# as soon as we created isolated GOPATH - we have to create a symlink
@@ -27,15 +27,7 @@ fmt:
 	$(GO) fmt ./pkg/...
 
 lint:
-	# 'gotype' checker requires modules to be installed in GOPATH directory
-	# as soon as we created isolated GOPATH - we have to install all subdirs
-	# from symlink created from isolated GOPATH to our source code
-	GOPATH=$(GOPATH) find $(GOPATH)/src/$(PROJECT_NAME)/$(CODE_SUBDIR)/* -type d -exec basename {} \; \
-		   | tr '\n' '\0' \
-		   | xargs -0 -n1 -I% go install $(PROJECT_NAME)/$(CODE_SUBDIR)/%
-	# continue on error to cleanup compiled packages
-	-gometalinter.v1 ./pkg/...
-	find $(GOPATH)/pkg -name $(PROJECT_NAME) -type d -exec rm -r {} +
+	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --disable=gotype ./pkg/...
 
 test:
 	$(GO) test ./pkg/...
