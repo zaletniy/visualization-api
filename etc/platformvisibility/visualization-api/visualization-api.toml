@@ -8,3 +8,7 @@ project_name="service"
 region="RegionOne"
 domain_name="default"
 endpoint_type="internal"
+
+[log]
+path = "/var/log/visualization_api/visualization_api.log"
+level = "info"
