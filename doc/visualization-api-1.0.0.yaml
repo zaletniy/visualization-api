@@ -16,7 +16,7 @@ basePath: /v1
 # Describe your paths here
 paths:
   /auth/openstack:
-    get:
+    post:
       description: Authenticate using keystone token
       tags:
         - auth
@@ -574,6 +574,9 @@ definitions:
       templateVersion:
         type: integer
         description: Template version. Last by default
+      templateBody:
+        type: string
+        description: Template body if templateName and templateVersion is not defined
       templateParameters:
         type: string
         description: Template parameters to render in JSON
