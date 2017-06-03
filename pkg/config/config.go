@@ -60,24 +60,21 @@ var (
 var flagReplacer = strings.NewReplacer(".", "-", "_", "-")
 var envReplacer = strings.NewReplacer(".", "_")
 
+var _ = flag.String(flagReplacer.Replace(logFileConfigName), "",
+	"Path to log file")
+var _ = flag.Int(flagReplacer.Replace(mysqlPortConfigName), 0,
+	"Port mysql server is listening on")
+var _ = flag.String(flagReplacer.Replace(mysqlPasswordConfigName), "",
+	"Password to authenticate on mysql server")
+var _ = flag.String(flagReplacer.Replace(mysqlHostConfigName), "",
+	"Host mysql server is running on")
+var _ = flag.String(flagReplacer.Replace(mysqlUserConfigName), "",
+	"Username to authenticate on mysql server")
+var _ = flag.String(flagReplacer.Replace(mysqlDatabaseConfigName), "",
+	"Database to use on mysql server")
+var _ = flag.Bool("debug", false, "display debug messages in stdout")
+
 func initializeCommandLineFlags() error {
-	// define flags here
-	flag.String(flagReplacer.Replace(logFileConfigName), "",
-		"Path to log file")
-	flag.String(flagReplacer.Replace(mysqlPortConfigName), "",
-		"Port mysql server is listening on")
-	flag.String(flagReplacer.Replace(mysqlPasswordConfigName), "",
-		"Password to authenticate on mysql server")
-	flag.String(flagReplacer.Replace(mysqlHostConfigName), "",
-		"Host mysql server is running on")
-	flag.String(flagReplacer.Replace(mysqlUserConfigName), "",
-		"Username to authenticate on mysql server")
-	flag.String(flagReplacer.Replace(mysqlDatabaseConfigName), "",
-		"Database to use on mysql server")
-
-	flag.Bool("debug", false, "display debug messages in stdout")
-
-	flag.Parse()
 
 	flagsToBind := []string{
 		logFileConfigName,
@@ -101,39 +98,10 @@ func initializeCommandLineFlags() error {
 	return err
 }
 
-// InitializeConfig parses application configuration from config file, env
-// variables and console flags. parsed configs are stored in module level variable
-func InitializeConfig() error {
-	var err error
-
-	// assign address of default initialized VisualizationApiConfig
-	// to global pointer
-	singleToneConfig = &VisualizationAPIConfig{}
-
-	// initialize path to conf files
-	viper.SetConfigName(configName)
-	viper.AddConfigPath(configDirPath)
-
-	// set automatic parse of environment variables
-	// env variables have higher priority then config file values,
-	// but are overriden with command line flags
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(envReplacer)
-
-	// initialize viper to read parameters passed by commandline via
-	// argv[], commandline variables have higher priority
-	// then env variables and config file values
-	err = initializeCommandLineFlags()
-	if err != nil {
-		return err
-	}
-
-	// parse configs using viper lib
-	err = viper.ReadInConfig()
-	if err != nil {
-		return err
-	}
-	// check if config value was captured
+func parseLoggingValues() error {
+	// parseLoggingValues aggregates logic for getting values from viper
+	// framework. Parsing options by groups reduces cyclomatic complexity of
+	// InitializeConfig function
 	logFileConfigValue := viper.GetString(
 		logFileConfigName)
 	if logFileConfigValue == "" {
@@ -150,6 +118,13 @@ func InitializeConfig() error {
 	}
 	singleToneConfig.LogLevel = logLevelConfigValue
 
+	return nil
+}
+
+func parseMysqlValues() error {
+	// parseLoggingValues aggregates logic for getting values from viper
+	// framework. Parsing options by groups reduces cyclomatic complexity of
+	// InitializeConfig function
 	mysqlHostConfigValue := viper.GetString(
 		mysqlHostConfigName)
 	if mysqlHostConfigValue == "" {
@@ -189,6 +164,53 @@ func InitializeConfig() error {
 			"MysqlPort", "port", "mysql", "MYSQL_PORT", "--mysql-port")
 	}
 	singleToneConfig.MysqlPort = mysqlPortConfigValue
+
+	return nil
+}
+
+// InitializeConfig parses application configuration from config file, env
+// variables and console flags. parsed configs are stored in module level variable
+func InitializeConfig() error {
+	var err error
+
+	// assign address of default initialized VisualizationApiConfig
+	// to global pointer
+	singleToneConfig = &VisualizationAPIConfig{}
+
+	// initialize path to conf files
+	viper.SetConfigName(configName)
+	viper.AddConfigPath(configDirPath)
+
+	// set automatic parse of environment variables
+	// env variables have higher priority then config file values,
+	// but are overriden with command line flags
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(envReplacer)
+
+	// initialize viper to read parameters passed by commandline via
+	// argv[], commandline variables have higher priority
+	// then env variables and config file values
+	err = initializeCommandLineFlags()
+	if err != nil {
+		return err
+	}
+
+	// parse configs using viper lib
+	err = viper.ReadInConfig()
+	if err != nil {
+		return err
+	}
+
+	// parsing of values from viper framework to struct is split to groups to
+	// reduce cyclomatic complexity of InitializeConfig function
+	err = parseLoggingValues()
+	if err != nil {
+		return err
+	}
+	err = parseMysqlValues()
+	if err != nil {
+		return err
+	}
 
 	// console debug has default values - no need to check
 	singleToneConfig.ConsoleDebug = viper.GetBool(
