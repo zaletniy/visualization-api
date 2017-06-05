@@ -10,6 +10,7 @@ import (
 
 	"visualization-api/pkg/config"
 	"visualization-api/pkg/database"
+	"visualization-api/pkg/http_endpoint"
 	"visualization-api/pkg/logging"
 )
 
@@ -95,4 +96,11 @@ func main() {
 	}
 
 	cleanupOnExit()
+
+	errorInitializingAPI := endpoint.Serve(
+		CONF.HTTPPort,
+	)
+	if errorInitializingAPI != nil {
+		exitWithError(errorInitializingAPI)
+	}
 }

@@ -16,6 +16,7 @@ init:
 	$(GO) get github.com/op/go-logging
 	$(GO) get github.com/go-sql-driver/mysql
 	$(GO) get github.com/go-xorm/xorm
+	$(GO) get github.com/pressly/chi
 	$(GO) get -u gopkg.in/alecthomas/gometalinter.v1
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --install
 	# as soon as our application does not use relative imports - source code

@@ -19,3 +19,7 @@ port = 3306
 username = "mysql"
 password = "password"
 database = "visualization_api"
+
+[http_endpoint]
+# port visualization-api is listening on
+port = 9080

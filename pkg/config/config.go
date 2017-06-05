@@ -38,6 +38,8 @@ const mysqlHostConfigName = "mysql.host"
 const mysqlUserConfigName = "mysql.username"
 const mysqlDatabaseConfigName = "mysql.database"
 
+const httpPortConfigName = "http_endpoint.port"
+
 // VisualizationAPIConfig is a struct that keeps all application config options
 type VisualizationAPIConfig struct {
 	// logging settings
@@ -51,6 +53,9 @@ type VisualizationAPIConfig struct {
 	MysqlUsername     string
 	MysqlDatabaseName string
 	MysqlPort         int
+
+	// http_endpoint settings
+	HTTPPort int
 }
 
 var (
@@ -73,6 +78,8 @@ var _ = flag.String(flagReplacer.Replace(mysqlUserConfigName), "",
 var _ = flag.String(flagReplacer.Replace(mysqlDatabaseConfigName), "",
 	"Database to use on mysql server")
 var _ = flag.Bool("debug", false, "display debug messages in stdout")
+var _ = flag.Int(flagReplacer.Replace(httpPortConfigName), 0,
+	"Port to serve http API")
 
 func initializeCommandLineFlags() error {
 
@@ -83,6 +90,7 @@ func initializeCommandLineFlags() error {
 		mysqlUserConfigName,
 		mysqlDatabaseConfigName,
 		mysqlPasswordConfigName,
+		httpPortConfigName,
 	}
 	for _, configName := range flagsToBind {
 		err := viper.BindPFlag(configName, flag.Lookup(
@@ -168,6 +176,19 @@ func parseMysqlValues() error {
 	return nil
 }
 
+func parseHTTPEndpointValues() error {
+	httpPortConfigValue := viper.GetInt(
+		httpPortConfigName)
+	if httpPortConfigValue == 0 {
+		return NewParseError(
+			"httpEndpointPort", "port", "http_endpoint", "HTTP_ENDPOINT_PORT",
+			"--http-endpoint-port")
+	}
+	singleToneConfig.HTTPPort = httpPortConfigValue
+
+	return nil
+}
+
 // InitializeConfig parses application configuration from config file, env
 // variables and console flags. parsed configs are stored in module level variable
 func InitializeConfig() error {
@@ -208,6 +229,10 @@ func InitializeConfig() error {
 		return err
 	}
 	err = parseMysqlValues()
+	if err != nil {
+		return err
+	}
+	err = parseHTTPEndpointValues()
 	if err != nil {
 		return err
 	}
