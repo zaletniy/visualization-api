@@ -40,6 +40,9 @@ const mysqlDatabaseConfigName = "mysql.database"
 
 const httpPortConfigName = "http_endpoint.port"
 
+// #nosec <- linter thinks that secret is hardcoded, in fact it is setting name
+const httpSecretConfigName = "http_endpoint.jwt_secret"
+
 // VisualizationAPIConfig is a struct that keeps all application config options
 type VisualizationAPIConfig struct {
 	// logging settings
@@ -55,7 +58,8 @@ type VisualizationAPIConfig struct {
 	MysqlPort         int
 
 	// http_endpoint settings
-	HTTPPort int
+	HTTPPort  int
+	JWTSecret string
 }
 
 var (
@@ -80,6 +84,8 @@ var _ = flag.String(flagReplacer.Replace(mysqlDatabaseConfigName), "",
 var _ = flag.Bool("debug", false, "display debug messages in stdout")
 var _ = flag.Int(flagReplacer.Replace(httpPortConfigName), 0,
 	"Port to serve http API")
+var _ = flag.String(flagReplacer.Replace(httpSecretConfigName), "",
+	"Secret to use for JsonWebToken signature")
 
 func initializeCommandLineFlags() error {
 
@@ -91,6 +97,7 @@ func initializeCommandLineFlags() error {
 		mysqlDatabaseConfigName,
 		mysqlPasswordConfigName,
 		httpPortConfigName,
+		httpSecretConfigName,
 	}
 	for _, configName := range flagsToBind {
 		err := viper.BindPFlag(configName, flag.Lookup(
@@ -185,6 +192,15 @@ func parseHTTPEndpointValues() error {
 			"--http-endpoint-port")
 	}
 	singleToneConfig.HTTPPort = httpPortConfigValue
+
+	httpSecretConfigValue := viper.GetString(
+		httpSecretConfigName)
+	if httpSecretConfigValue == "" {
+		return NewParseError(
+			"httpEndpointSecret", "secret", "mysql",
+			"HTTP_ENDPOINT_JWT_SECRET", "--http-endpoint-jwt-secret")
+	}
+	singleToneConfig.JWTSecret = httpSecretConfigValue
 
 	return nil
 }

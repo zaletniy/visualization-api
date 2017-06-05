@@ -23,3 +23,5 @@ database = "visualization_api"
 [http_endpoint]
 # port visualization-api is listening on
 port = 9080
+# JWT secret. this parameter must be changed during application deployment
+jwt_secret = "secret"

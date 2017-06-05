@@ -98,6 +98,7 @@ func main() {
 	cleanupOnExit()
 
 	errorInitializingAPI := endpoint.Serve(
+		CONF.JWTSecret,
 		CONF.HTTPPort,
 	)
 	if errorInitializingAPI != nil {

@@ -9,8 +9,9 @@ import (
 const v1ApiPrefix = "/v1"
 
 // Serve is an entry point to our HTTP API
-func Serve(httpPort int) error {
+func Serve(secret string, httpPort int) error {
 	rootRouter := chi.NewRouter()
+	rootRouter.Use(authenticationMiddleware(secret))
 	rootRouter.Mount(v1ApiPrefix, v1Router())
 	return http.ListenAndServe(fmt.Sprintf(":%d", httpPort), rootRouter)
 }
