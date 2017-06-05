@@ -7,11 +7,11 @@ securityDefinitions:
   userApiToken:
     type: apiKey
     in: header
-    name: X-Auth-Token
+    name: Authorization
   adminApiToken:
     type: apiKey
     in: header
-    name: X-Auth-Token
+    name: Authorization
 basePath: /v1
 # Describe your paths here
 paths:
