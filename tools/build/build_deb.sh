@@ -11,5 +11,5 @@ fpm -s dir -t deb \
   $PROJECT_ROOT/etc/platformvisibility/visualization-api/visualization-api.toml=/etc/platformvisibility/visualization-api/ \
   $PROJECT_ROOT/build/linux-amd64/visualizationapi=/usr/bin/
 
-mkdir -p $ROJECT_ROOT/build/deb
+mkdir -p $PROJECT_ROOT/build/deb
 mv platform-visibility-all* $PROJECT_ROOT/build/deb/
