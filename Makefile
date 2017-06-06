@@ -44,7 +44,19 @@ build-all: fmt lint
 	mkdir -p build/linux-amd64
 	GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION) -X main.GitVersion=$(GIT_SHA)" -o $(PWD)/build/linux-amd64/visualizationapi ./pkg/cmd/visualizationapi
 
+package-init:
+	docker build -t com.mirantis.pv/build ./tools/build
+
+package-clean:
+	docker image rm -f com.mirantis.pv/build
+	rm -rf build/deb/*
+
 package:
-	exit 1
+	docker run -v $(PWD):/app com.mirantis.pv/build /app/tools/build/build_deb.sh
+
+package-debug:
+	docker run -it -v $(PWD):/app com.mirantis.pv/build /bin/bash
+docker:
+	docker build -t com.mirantis.pv/visualization-api -f tools/docker/visualization-api/Dockerfile .
 
 all: init build-all package
