@@ -56,7 +56,11 @@ package:
 
 package-debug:
 	docker run -it -v $(PWD):/app com.mirantis.pv/build /bin/bash
+
 docker:
 	docker build -t com.mirantis.pv/visualization-api -f tools/docker/visualization-api/Dockerfile .
+
+docker-push:
+	docker push $(DOCKER_USERNAME)/visualization-api
 
 all: init build-all package
