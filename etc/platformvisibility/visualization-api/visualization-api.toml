@@ -10,7 +10,7 @@ domain_name="default"
 endpoint_type="internal"
 
 [log]
-path = "/var/log/visualization_api/visualization_api.log"
+path = "/var/log/platformvisibility/visualization-api.log"
 level = "info"
 
 [mysql]
