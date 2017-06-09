@@ -6,6 +6,9 @@ go:
 services:
   - docker
 
+matrix:
+  fast_finish: true
+
 before_install:
   - make init
 

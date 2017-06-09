@@ -25,7 +25,7 @@ init:
 	# has to be present in GOPATH to make lint work
 	# as soon as we created isolated GOPATH - we have to create a symlink
 	# from GOPATH to our source code
-	mkdir $(GOPATH)/src/$(PROJECT_NAME)/
+	mkdir -p $(GOPATH)/src/$(PROJECT_NAME)/
 	ln -s $(PWD)/$(CODE_SUBDIR) $(GOPATH)/src/$(PROJECT_NAME)/$(CODE_SUBDIR)
 
 fmt:
@@ -40,7 +40,7 @@ test:
 build: fmt lint
 	$(GO) build ./pkg/cmd/...
 
-build-all: fmt lint
+build-all: fmt
 	mkdir -p build/linux-amd64
 	GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION) -X main.gitVersion=$(GIT_SHA)" -o $(PWD)/build/linux-amd64/visualizationapi ./pkg/cmd/visualizationapi
 
@@ -63,4 +63,4 @@ docker:
 docker-push:
 	docker push $(DOCKER_USERNAME)/visualization-api
 
-all: init build-all package
+all: init fmt lint  build-all package-init package docker
