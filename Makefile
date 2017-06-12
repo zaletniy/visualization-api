@@ -20,6 +20,7 @@ init:
 	$(GO) get github.com/auth0/go-jwt-middleware
 	$(GO) get github.com/dgrijalva/jwt-go
 	$(GO) get -u gopkg.in/alecthomas/gometalinter.v1
+	$(GO) get github.com/rubenv/sql-migrate/...
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --install
 	# as soon as our application does not use relative imports - source code
 	# has to be present in GOPATH to make lint work
@@ -43,6 +44,7 @@ build: fmt lint
 build-all: fmt
 	mkdir -p build/linux-amd64
 	GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION) -X main.gitVersion=$(GIT_SHA)" -o $(PWD)/build/linux-amd64/visualizationapi ./pkg/cmd/visualizationapi
+	GOOS=linux GOARCH=amd64 $(GO) build -o $(PWD)/build/linux-amd64/sql-migrate github.com/rubenv/sql-migrate/sql-migrate
 
 package-init:
 	docker build -t com.mirantis.pv/build ./tools/build
