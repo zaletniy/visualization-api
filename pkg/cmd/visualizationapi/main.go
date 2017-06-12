@@ -12,6 +12,7 @@ import (
 	"visualization-api/pkg/database"
 	"visualization-api/pkg/http_endpoint"
 	"visualization-api/pkg/logging"
+	"visualization-api/pkg/openstack"
 )
 
 var (
@@ -23,8 +24,8 @@ var (
 	versionParam = flag.Bool("version", false, "Prints version information")
 )
 
-func exitWithError(err error) {
-	fmt.Println(err)
+func exitWithError(err error, optional ...string) {
+	fmt.Println(optional, err)
 	os.Exit(1)
 }
 
@@ -56,7 +57,9 @@ func main() {
 		2 - initialize io.Writer that rotates files it is writing to
 		3 - initialize logging module with rotation writer, created in step 2
 		4 - initialize database connection
-		5 - initialize signals handler, to close file in rotation logger
+		5 - intiialize openstack client
+		6 - initialize signals handler, to close file in rotation logger
+		7 - initialize http server
 	*/
 
 	flag.Parse()
@@ -93,6 +96,17 @@ func main() {
 	)
 	if databaseInitializationError != nil {
 		exitWithError(databaseInitializationError)
+	}
+
+	_, errorInitializingOpenstackCli := openstack.NewOpenstackClient(
+		CONF.OpenstackAuthURL,
+		CONF.OpenstackUsername,
+		CONF.OpenstackPassword,
+		CONF.OpenstackProject,
+		CONF.OpenstackDomain,
+	)
+	if errorInitializingOpenstackCli != nil {
+		exitWithError(errorInitializingOpenstackCli, "openstack initialization")
 	}
 
 	cleanupOnExit()

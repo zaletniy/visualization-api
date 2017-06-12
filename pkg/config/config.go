@@ -43,6 +43,12 @@ const httpPortConfigName = "http_endpoint.port"
 // #nosec <- linter thinks that secret is hardcoded, in fact it is setting name
 const httpSecretConfigName = "http_endpoint.jwt_secret"
 
+const openstackAuthURLConfigName = "openstack.auth_url"
+const openstackUsernameConfigName = "openstack.username"
+const openstackPasswordConfigName = "openstack.password"
+const openstackProjectConfigName = "openstack.project_name"
+const openstackDomainConfigName = "openstack.domain_name"
+
 // VisualizationAPIConfig is a struct that keeps all application config options
 type VisualizationAPIConfig struct {
 	// logging settings
@@ -60,6 +66,13 @@ type VisualizationAPIConfig struct {
 	// http_endpoint settings
 	HTTPPort  int
 	JWTSecret string
+
+	// openstack settings
+	OpenstackAuthURL  string
+	OpenstackUsername string
+	OpenstackPassword string
+	OpenstackProject  string
+	OpenstackDomain   string
 }
 
 var (
@@ -87,6 +100,17 @@ var _ = flag.Int(flagReplacer.Replace(httpPortConfigName), 0,
 var _ = flag.String(flagReplacer.Replace(httpSecretConfigName), "",
 	"Secret to use for JsonWebToken signature")
 
+var _ = flag.String(flagReplacer.Replace(openstackAuthURLConfigName), "",
+	"Auth url of openstack keystone")
+var _ = flag.String(flagReplacer.Replace(openstackUsernameConfigName), "",
+	"Username to auth in openstack keystone")
+var _ = flag.String(flagReplacer.Replace(openstackPasswordConfigName), "",
+	"Password to auth in openstack keystone")
+var _ = flag.String(flagReplacer.Replace(openstackProjectConfigName), "",
+	"Project name to auth in openstack keystone")
+var _ = flag.String(flagReplacer.Replace(openstackDomainConfigName), "",
+	"Domain name to auth in openstack keystone")
+
 func initializeCommandLineFlags() error {
 
 	flagsToBind := []string{
@@ -98,6 +122,11 @@ func initializeCommandLineFlags() error {
 		mysqlPasswordConfigName,
 		httpPortConfigName,
 		httpSecretConfigName,
+		openstackAuthURLConfigName,
+		openstackUsernameConfigName,
+		openstackPasswordConfigName,
+		openstackProjectConfigName,
+		openstackDomainConfigName,
 	}
 	for _, configName := range flagsToBind {
 		err := viper.BindPFlag(configName, flag.Lookup(
@@ -197,10 +226,59 @@ func parseHTTPEndpointValues() error {
 		httpSecretConfigName)
 	if httpSecretConfigValue == "" {
 		return NewParseError(
-			"httpEndpointSecret", "secret", "mysql",
+			"httpEndpointSecret", "secret", "http_endpoint",
 			"HTTP_ENDPOINT_JWT_SECRET", "--http-endpoint-jwt-secret")
 	}
 	singleToneConfig.JWTSecret = httpSecretConfigValue
+
+	return nil
+}
+
+func parseOpenstackValues() error {
+	openstackAuthURLConfigValue := viper.GetString(
+		openstackAuthURLConfigName)
+	if openstackAuthURLConfigValue == "" {
+		return NewParseError(
+			"OpenstackAuthURL", "auth_url", "openstack",
+			"OPENSTACK_AUTH_URL", "--openstack-auth-url")
+	}
+	singleToneConfig.OpenstackAuthURL = openstackAuthURLConfigValue
+
+	openstackPasswordConfigValue := viper.GetString(
+		openstackPasswordConfigName)
+	if openstackPasswordConfigValue == "" {
+		return NewParseError(
+			"OpenstackPassword", "password", "openstack",
+			"OPENSTACK_PASSWORD", "--openstack-password")
+	}
+	singleToneConfig.OpenstackPassword = openstackPasswordConfigValue
+
+	openstackUsernameConfigValue := viper.GetString(
+		openstackUsernameConfigName)
+	if openstackUsernameConfigValue == "" {
+		return NewParseError(
+			"OpenstackUsername", "username", "openstack",
+			"OPENSTACK_USERNAME", "--openstack-username")
+	}
+	singleToneConfig.OpenstackUsername = openstackUsernameConfigValue
+
+	openstackProjectConfigValue := viper.GetString(
+		openstackProjectConfigName)
+	if openstackProjectConfigValue == "" {
+		return NewParseError(
+			"OpenstackProject", "project", "openstack",
+			"OPENSTACK_PROJECT_NAME", "--openstack-project-name")
+	}
+	singleToneConfig.OpenstackProject = openstackProjectConfigValue
+
+	openstackDomainConfigValue := viper.GetString(
+		openstackDomainConfigName)
+	if openstackDomainConfigValue == "" {
+		return NewParseError(
+			"OpenstackDomain", "domain_name", "openstack",
+			"OPENSTACK_DOMAIN_NAME", "--openstack-domain-name")
+	}
+	singleToneConfig.OpenstackDomain = openstackDomainConfigValue
 
 	return nil
 }
@@ -249,6 +327,10 @@ func InitializeConfig() error {
 		return err
 	}
 	err = parseHTTPEndpointValues()
+	if err != nil {
+		return err
+	}
+	err = parseOpenstackValues()
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,12 @@ init:
 	$(GO) get github.com/pressly/chi
 	$(GO) get github.com/auth0/go-jwt-middleware
 	$(GO) get github.com/dgrijalva/jwt-go
+	$(GO) get github.com/gophercloud/gophercloud
+	$(GO) get github.com/gophercloud/gophercloud/openstack
+	$(GO) get github.com/gophercloud/gophercloud/openstack/identity/v3/tokens
+	$(GO) get github.com/mitchellh/mapstructure
+	$(GO) get github.com/golang/mock/gomock
+	$(GO) get github.com/golang/mock/mockgen
 	$(GO) get -u gopkg.in/alecthomas/gometalinter.v1
 	$(GO) get github.com/rubenv/sql-migrate/...
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --install
@@ -35,9 +41,17 @@ fmt:
 	$(GO) fmt ./pkg/...
 
 lint:
-	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --disable=gotype ./pkg/...
+	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --disable=gotype \
+		  --exclude=mock --exclude=Mock ./pkg/...
 
-test:
+generate-mocks:
+	mkdir -p ./pkg/openstack/mock
+	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/openstack/mock/mock.go visualization-api/pkg/openstack ClientInterface
+
+clean-mocks:
+	rm -r ./pkg/openstack/mock
+
+test: generate-mocks
 	$(GO) test ./pkg/...
 
 test-integration:
