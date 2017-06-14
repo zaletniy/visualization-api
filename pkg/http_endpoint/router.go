@@ -4,14 +4,23 @@ import (
 	"fmt"
 	"github.com/pressly/chi"
 	"net/http"
+	"visualization-api/pkg/http_endpoint/common"
+	"visualization-api/pkg/http_endpoint/v1"
 )
 
 const v1ApiPrefix = "/v1"
 
-// Serve is an entry point to our HTTP API
-func Serve(secret string, httpPort int) error {
+// InitializeRouter would initialize all routers of our api
+func InitializeRouter(clients *common.ClientContainer,
+	handler common.HandlerInterface, secret string) *chi.Mux {
 	rootRouter := chi.NewRouter()
-	rootRouter.Use(authenticationMiddleware(secret))
-	rootRouter.Mount(v1ApiPrefix, v1Router())
-	return http.ListenAndServe(fmt.Sprintf(":%d", httpPort), rootRouter)
+	rootRouter.Mount(v1ApiPrefix, v1Api.InitializeRouter(clients, handler,
+		secret))
+	return rootRouter
+}
+
+// Serve is an entry point to our HTTP API
+func Serve(secret string, httpPort int, clients *common.ClientContainer) error {
+	return http.ListenAndServe(fmt.Sprintf(":%d", httpPort), InitializeRouter(
+		clients, &v1Api.V1Handler{}, secret))
 }

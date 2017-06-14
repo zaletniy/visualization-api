@@ -11,6 +11,7 @@ import (
 	"visualization-api/pkg/config"
 	"visualization-api/pkg/database"
 	"visualization-api/pkg/http_endpoint"
+	"visualization-api/pkg/http_endpoint/common"
 	"visualization-api/pkg/logging"
 	"visualization-api/pkg/openstack"
 )
@@ -98,7 +99,7 @@ func main() {
 		exitWithError(databaseInitializationError)
 	}
 
-	_, errorInitializingOpenstackCli := openstack.NewOpenstackClient(
+	openstackCli, errorInitializingOpenstackCli := openstack.NewOpenstackClient(
 		CONF.OpenstackAuthURL,
 		CONF.OpenstackUsername,
 		CONF.OpenstackPassword,
@@ -114,6 +115,7 @@ func main() {
 	errorInitializingAPI := endpoint.Serve(
 		CONF.JWTSecret,
 		CONF.HTTPPort,
+		&common.ClientContainer{openstackCli},
 	)
 	if errorInitializingAPI != nil {
 		exitWithError(errorInitializingAPI)
