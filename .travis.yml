@@ -16,6 +16,7 @@ script:
   - make lint
   - make test
   - make build-all
+  - make test-integration
   - make package-init
   - make package
   - make docker

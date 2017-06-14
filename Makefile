@@ -17,6 +17,7 @@ init:
 	$(GO) get github.com/op/go-logging
 	$(GO) get github.com/go-sql-driver/mysql
 	$(GO) get github.com/go-xorm/xorm
+	$(GO) get github.com/stretchr/testify/assert
 	$(GO) get github.com/pressly/chi
 	$(GO) get github.com/auth0/go-jwt-middleware
 	$(GO) get github.com/dgrijalva/jwt-go
@@ -38,6 +39,12 @@ lint:
 
 test:
 	$(GO) test ./pkg/...
+
+test-integration:
+	docker run --name=grafana -d -p 3000:3000 grafana/grafana
+	sleep 10
+	GRAFANA_URL=http://0.0.0.0:3000 GRAFANA_USER=admin GRAFANA_PASS=admin $(GO) test visualization-api/pkg/grafanaclient -tags=integration	
+	docker rm --force grafana
 
 build: fmt lint
 	$(GO) build ./pkg/cmd/...
