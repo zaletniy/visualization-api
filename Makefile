@@ -31,6 +31,9 @@ init:
 	mkdir -p $(GOPATH)/src/$(PROJECT_NAME)/
 	ln -s $(PWD)/$(CODE_SUBDIR) $(GOPATH)/src/$(PROJECT_NAME)/$(CODE_SUBDIR)
 
+stylecheck:
+	if [ ! -z "$$($(G0) go fmt ./pkg/...)" ]; then exit 1; fi
+
 fmt:
 	$(GO) fmt ./pkg/...
 
