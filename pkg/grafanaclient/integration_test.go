@@ -3,9 +3,9 @@
 package grafanaclient
 
 import (
-	"testing"
 	"fmt"
 	"os"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,13 +34,13 @@ var url = getenv("GRAFANA_URL")
 var user = getenv("GRAFANA_USER")
 var pass = getenv("GRAFANA_PASS")
 
-func getenv(key string) string{
-        value := os.Getenv(key)
-        if len(value) == 0 {
-                fmt.Printf("Environment variable %s in not defined \n", key)
-                os.Exit(1)
-        }
-        return value
+func getenv(key string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		fmt.Printf("Environment variable %s in not defined \n", key)
+		os.Exit(1)
+	}
+	return value
 }
 
 func Test_DoLogon(t *testing.T) {
