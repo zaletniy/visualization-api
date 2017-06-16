@@ -1,0 +1,21 @@
+[openstack]
+# OpenStack Keystone endpoint
+auth_url="http://172.19.4.64:5000/v3"
+# User with admin role in order to call 'openstack server list --all-projects'
+username="platform-visibility"
+password="123"
+project_name="service"
+region="RegionOne"
+domain_name="default"
+endpoint_type="internal"
+
+[visualization_api]
+endpoint="http://localhost:9080/v1"
+
+[http_endpoint]
+# port visualization-api is listening on
+port = 9081
+
+[log]
+path = "/var/log/platformvisibility/auth_proxy.log"
+level = "info"

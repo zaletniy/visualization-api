@@ -45,7 +45,7 @@ fmt:
 
 lint:
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --disable=gotype \
-		  --disable=errcheck --disable=gas --exclude=mock --exclude=Mock \
+		  --disable=errcheck --disable=gas --disable=gocycle --exclude=mock --exclude=Mock \
 		  --exclude='dynamic type' ./pkg/...
 
 generate-mocks:
@@ -73,11 +73,13 @@ test-integration:
 	docker rm --force grafana-integration-test
 
 build: fmt lint
-	$(GO) build ./pkg/cmd/...
+	$(GO) build ./pkg/cmd/auth_proxy
+	$(GO) build ./pkg/cmd/visualizationapi
 
 build-all: fmt
 	mkdir -p build/linux-amd64
 	GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION) -X main.gitVersion=$(GIT_SHA)" -o $(PWD)/build/linux-amd64/visualizationapi ./pkg/cmd/visualizationapi
+	GOOS=linux GOARCH=amd64 $(GO) build -ldflags "-X main.version=$(VERSION) -X main.gitVersion=$(GIT_SHA)" -o $(PWD)/build/linux-amd64/auth_proxy ./pkg/cmd/auth_proxy
 	GOOS=linux GOARCH=amd64 $(GO) build -o $(PWD)/build/linux-amd64/sql-migrate github.com/rubenv/sql-migrate/sql-migrate
 
 package-init:

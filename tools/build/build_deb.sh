@@ -10,6 +10,7 @@ fpm -s dir -t deb \
   --after-install /app/tools/build/debian/postinstall \
   $PROJECT_ROOT/etc/platformvisibility/=/etc/platformvisibility/ \
   $PROJECT_ROOT/build/linux-amd64/visualizationapi=/usr/bin/ \
+  $PROJECT_ROOT/build/linux-amd64/auth_proxy=/usr/bin/ \
   $PROJECT_ROOT/build/linux-amd64/sql-migrate=/usr/bin/ \
   $PROJECT_ROOT/tools/database-migrations/=/var/lib/platformvisibility/database-migrations/
 
