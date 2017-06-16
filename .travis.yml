@@ -6,13 +6,11 @@ go:
 services:
   - docker
 
-matrix:
-  fast_finish: true
-
 before_install:
   - make init
 
 script:
+  - make stylecheck
   - make lint
   - make test
   - make build-all
