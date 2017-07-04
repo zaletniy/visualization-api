@@ -12,10 +12,17 @@ endpoint_type="internal"
 [visualization_api]
 endpoint="http://localhost:9080/v1"
 
+[grafana]
+endpoint="http://localhost:3000/"
+auth_header="X-Webauth-User"
+
 [http_endpoint]
 # port visualization-api is listening on
 port = 9081
 
 [log]
-path = "/var/log/platformvisibility/auth_proxy.log"
-level = "info"
+path = "auth_proxy.log"
+level = "debug"
+
+#log detailed request dump
+request_logging = "false"
