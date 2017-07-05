@@ -29,6 +29,7 @@ init:
 	$(GO) get github.com/golang/mock/mockgen
 	$(GO) get -u gopkg.in/alecthomas/gometalinter.v1
 	$(GO) get github.com/rubenv/sql-migrate/...
+	$(GO) get github.com/shuaiming/mung
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --install
 	# as soon as our application does not use relative imports - source code
 	# has to be present in GOPATH to make lint work

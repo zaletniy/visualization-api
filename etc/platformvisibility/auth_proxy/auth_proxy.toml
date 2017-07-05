@@ -20,6 +20,12 @@ auth_header="X-Webauth-User"
 # port visualization-api is listening on
 port = 9081
 
+[cookies]
+# must be 32 or 64 bytes long (using ASCII character here as 1 byte)
+secret="eiw3oothee0ohGucieB0Gaequoh1rahfoh5phoob5ail7thowaiM2aej2iej8eeg"
+# cookies max age in seconds 172800 = 48h
+max_age=172800
+
 [log]
 path = "auth_proxy.log"
 level = "debug"
