@@ -45,7 +45,7 @@ test-integration:
 	sleep 10
 	curl -v -X POST -H "Content-Type: applciation/json" -d '{"name":"PV Service", "login":"pv_service", "password":"123123"}' http://admin:admin@localhost:3000/api/admin/users
 	curl -v -X PUT -H "Content-Type: applciation/json" -d '{"isGrafanaAdmin":true}' http://admin:admin@localhost:3000/api/admin/users/2/permissions
-	GRAFANA_URL=http://0.0.0.0:3000 GRAFANA_USER=pv_service GRAFANA_PASS=123123 $(GO) test visualization-api/pkg/grafanaclient -tags=integration	
+	GRAFANA_URL=http://0.0.0.0:3000 GRAFANA_USER=pv_service GRAFANA_PASS=123123 $(GO) test -v visualization-api/pkg/grafanaclient -tags=integration	
 	docker rm --force grafana-integration-test
 
 build: fmt lint
