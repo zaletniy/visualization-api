@@ -210,8 +210,8 @@ func (s *Session) httpRequest(method string, url string, body io.Reader) (result
 		var gMess GrafanaMessage
 		err := dec.Decode(&gMess)
 		if err != nil {
-         	       return result, err
-	        }
+			return result, err
+		}
 
 		return result, GrafanaError{response.StatusCode, gMess.Message}
 	}
@@ -227,8 +227,8 @@ func (s *Session) DoLogon() (err error) {
 	login := Login{User: s.User, Password: s.Password}
 	jsonStr, err := json.Marshal(login)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -243,8 +243,8 @@ func (s *Session) CreateDataSource(ds DataSource) (err error) {
 
 	jsonStr, err := json.Marshal(ds)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -277,8 +277,8 @@ func (s *Session) DeleteDataSource(ds DataSource) (err error) {
 
 	jsonStr, err := json.Marshal(ds)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("DELETE", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -345,9 +345,9 @@ func (s *Session) CreateUser(user AdminCreateUser) (err error) {
 	reqURL := s.url + "/api/admin/users"
 	jsonStr, err := json.Marshal(user)
 	if err != nil {
-                return
-        }
-        
+		return
+	}
+
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 
 	return
@@ -358,8 +358,8 @@ func (s *Session) DeleteUser(user User) (err error) {
 	reqURL := fmt.Sprintf("%s/api/admin/users/%d", s.url, user.ID)
 	jsonStr, err := json.Marshal(user)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("DELETE", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -384,8 +384,8 @@ func (s *Session) CreateOrg(org Org) (err error) {
 	reqURL := s.url + "/api/orgs"
 	jsonStr, err := json.Marshal(org)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -409,8 +409,8 @@ func (s *Session) DeleteOrg(org OrgList) (err error) {
 	reqURL := fmt.Sprintf("%s/api/orgs/%d", s.url, org.ID)
 	jsonStr, err := json.Marshal(org)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("DELETE", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -436,8 +436,8 @@ func (s *Session) CreateOrgUser(user AdminCreateUser, createOrguser CreateUserIn
 	reqUserURL := s.url + "/api/admin/users"
 	jsonUsrStr, err := json.Marshal(user)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("POST", reqUserURL, bytes.NewBuffer(jsonUsrStr))
 	if err != nil {
@@ -447,8 +447,8 @@ func (s *Session) CreateOrgUser(user AdminCreateUser, createOrguser CreateUserIn
 	reqURL := fmt.Sprintf("%s/api/orgs/%d/users", s.url, org.ID)
 	jsonStr, err := json.Marshal(createOrguser)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 
@@ -461,8 +461,8 @@ func (s *Session) DeleteOrgUser(user User) (err error) {
 	reqURL := fmt.Sprintf("%s/api/admin/users/%d", s.url, user.ID)
 	jsonStr, err := json.Marshal(user)
 	if err != nil {
-                return
-        }
+		return
+	}
 
 	_, err = s.httpRequest("DELETE", reqURL, bytes.NewBuffer(jsonStr))
 
