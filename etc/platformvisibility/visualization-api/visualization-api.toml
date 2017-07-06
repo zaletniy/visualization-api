@@ -20,6 +20,11 @@ username = "mysql"
 password = "password"
 database = "visualization_api"
 
+[grafana]
+url = "http://172.18.236.207:3000"
+username = "admin"
+password = "admin"
+
 [http_endpoint]
 # port visualization-api is listening on
 port = 9080

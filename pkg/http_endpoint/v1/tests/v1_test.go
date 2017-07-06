@@ -9,6 +9,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"visualization-api/pkg/grafanaclient"
+	"visualization-api/pkg/grafanaclient/mock"
 	"visualization-api/pkg/http_endpoint"
 	"visualization-api/pkg/http_endpoint/common"
 	"visualization-api/pkg/http_endpoint/common/mock"
@@ -81,6 +83,7 @@ func TestAuthHandler(t *testing.T) {
 		tokenValid     bool
 		tokenInfo      *openstack.TokenInfo
 		expectedResult []byte
+		returnID       int
 	}{
 		{
 			description: "t",
@@ -94,11 +97,13 @@ func TestAuthHandler(t *testing.T) {
 			secret:      "secret",
 			tokenValid:  true,
 			tokenInfo: &openstack.TokenInfo{
-				ID:        "ID",
-				ProjectID: "821fb77b2ab94232a1ff3d40028f63b4",
-				ExpiresAt: parsedTime,
+				ID:          "ID",
+				ProjectName: "test",
+				ProjectID:   "821fb77b2ab94232a1ff3d40028f63b4",
+				ExpiresAt:   parsedTime,
 			},
-			expectedResult: []byte(`{"jwt":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc0FkbWluIjpmYWxzZSwib3JnSWQiOiI4MjFmYjc3YjJhYjk0MjMyYTFmZjNkNDAwMjhmNjNiNCIsImV4cCI6MTQ5NzQ4NzcyMX0.677IM3wSNqvgA1_K7U1FFE-oXWTupdWEy9CrozXt3Xw","token":{"organizationId":"821fb77b2ab94232a1ff3d40028f63b4","expiresAt":"2017-06-15T00:48:41Z","isAdmin":false}}`),
+			returnID:       3,
+			expectedResult: []byte(`{"jwt":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc0FkbWluIjpmYWxzZSwib3JnSWQiOiIzIiwiZXhwIjoxNDk3NDg3NzIxfQ.gxv4nFfuvhtZ6Q2Q5ii6J29s1oTcUXcQOLk08JWlAZU","token":{"organizationId":"3","expiresAt":"2017-06-15T00:48:41Z","isAdmin":false}}`),
 		},
 	}
 
@@ -107,7 +112,8 @@ func TestAuthHandler(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 
-		mockedOpenstack := mock_openstack.NewMockClientInterface(mockCtrl)
+		clientContainer := testHelper.MockClientContainer(mockCtrl)
+		mockedOpenstack := clientContainer.Openstack.(*mock_openstack.MockClientInterface)
 		mockedOpenstack.EXPECT().ValidateToken(testCase.token).Return(
 			testCase.tokenValid, nil)
 
@@ -115,10 +121,12 @@ func TestAuthHandler(t *testing.T) {
 		if testCase.tokenValid {
 			mockedOpenstack.EXPECT().GetTokenInfo(testCase.token).Return(
 				testCase.tokenInfo, nil)
+			orgID := &grafanaclient.OrgID{}
+			orgID.ID = testCase.returnID
+			clientContainer.Grafana.(*mock_grafanaclient.MockSessionInterface).EXPECT().GetOrCreateOrgByName(testCase.tokenInfo.ProjectName+"-"+testCase.tokenInfo.ProjectID).Return(orgID, nil)
 			mockedClock.EXPECT().Now().Return(parsedTime.Add(
 				-v1Api.TokenIssueHours * time.Hour))
 		}
-		clientContainer := &common.ClientContainer{Openstack: mockedOpenstack}
 		handler := v1Api.V1Handler{}
 		authResult, err := handler.AuthOpenstack(clientContainer, mockedClock,
 			testCase.token, testCase.secret)

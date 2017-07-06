@@ -2,6 +2,7 @@ package testHelper
 
 import (
 	"github.com/golang/mock/gomock"
+	"visualization-api/pkg/grafanaclient/mock"
 	"visualization-api/pkg/http_endpoint/common"
 	"visualization-api/pkg/logging"
 	"visualization-api/pkg/openstack/mock"
@@ -21,5 +22,6 @@ func InitializeLogger() {
 /*MockClientContainer returns struct populated with all mocks required*/
 func MockClientContainer(mockCtrl *gomock.Controller) *common.ClientContainer {
 	mockedOpenstack := mock_openstack.NewMockClientInterface(mockCtrl)
-	return &common.ClientContainer{mockedOpenstack}
+	mockedGrafana := mock_grafanaclient.NewMockSessionInterface(mockCtrl)
+	return &common.ClientContainer{mockedOpenstack, mockedGrafana}
 }

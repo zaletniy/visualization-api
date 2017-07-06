@@ -51,7 +51,8 @@ func (cli *Client) GetTokenInfo(token string) (*TokenInfo, error) {
 			ExpiresAt string              `mapstructure:"expires_at"`
 			Roles     []map[string]string `mapstructure:"roles"`
 			Project   struct {
-				ID string `mapstructure:"id"`
+				ID   string `mapstructure:"id"`
+				Name string `mapstructure:"name"`
 			} `mapstructure:"project"`
 		} `mapstructure:"token"`
 	}
@@ -73,6 +74,7 @@ func (cli *Client) GetTokenInfo(token string) (*TokenInfo, error) {
 	}
 	resultToken.Roles = parsedResponse.Token.Roles
 	resultToken.ProjectID = parsedResponse.Token.Project.ID
+	resultToken.ProjectName = parsedResponse.Token.Project.Name
 
 	log.Logger.Debugf("Successfully retrieved openstack data for token %s",
 		token)

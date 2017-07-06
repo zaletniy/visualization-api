@@ -10,6 +10,7 @@ import (
 
 	"visualization-api/pkg/config"
 	"visualization-api/pkg/database"
+	"visualization-api/pkg/grafanaclient"
 	"visualization-api/pkg/http_endpoint"
 	"visualization-api/pkg/http_endpoint/common"
 	"visualization-api/pkg/logging"
@@ -58,9 +59,10 @@ func main() {
 		2 - initialize io.Writer that rotates files it is writing to
 		3 - initialize logging module with rotation writer, created in step 2
 		4 - initialize database connection
-		5 - intiialize openstack client
-		6 - initialize signals handler, to close file in rotation logger
-		7 - initialize http server
+		5 - initialize grafana client
+		6 - intiialize openstack client
+		7 - initialize signals handler, to close file in rotation logger
+		8 - initialize http server
 	*/
 
 	flag.Parse()
@@ -99,6 +101,16 @@ func main() {
 		exitWithError(databaseInitializationError)
 	}
 
+	// initialize grafana session
+	grafanaSession, grafanaInitializationError := grafanaclient.NewSession(
+		CONF.GrafanaUsername,
+		CONF.GrafanaPassword,
+		CONF.GrafanaURL,
+	)
+	if grafanaInitializationError != nil {
+		exitWithError(grafanaInitializationError, "grafana session error")
+	}
+
 	openstackCli, errorInitializingOpenstackCli := openstack.NewOpenstackClient(
 		CONF.OpenstackAuthURL,
 		CONF.OpenstackUsername,
@@ -115,7 +127,7 @@ func main() {
 	errorInitializingAPI := endpoint.Serve(
 		CONF.JWTSecret,
 		CONF.HTTPPort,
-		&common.ClientContainer{openstackCli},
+		&common.ClientContainer{openstackCli, grafanaSession},
 	)
 	if errorInitializingAPI != nil {
 		exitWithError(errorInitializingAPI)
