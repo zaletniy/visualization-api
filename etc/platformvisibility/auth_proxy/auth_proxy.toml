@@ -19,6 +19,7 @@ auth_header="X-Webauth-User"
 [http_endpoint]
 # port visualization-api is listening on
 port = 9081
+login_page="./etc/platformvisibility/auth_proxy/login.html"
 
 [cookies]
 # must be 32 or 64 bytes long (using ASCII character here as 1 byte)

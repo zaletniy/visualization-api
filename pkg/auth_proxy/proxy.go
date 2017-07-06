@@ -6,8 +6,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/shuaiming/mung/middlewares"
 	log "visualization-api/pkg/logging"
-	//"github.com/shuaiming/mung/middlewares"
 )
 
 // Proxy wapper ReverseProxy
@@ -31,37 +31,30 @@ func NewProxy(endpoint string, requestLogging bool, authHeader string) (*Proxy, 
 }
 
 func (p *Proxy) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	//sess := middlewares.GetSession(r)
-	//openid := middlewares.GetOpenIDUser(r)
-
-	// overwrite grafana's login
-	//if r.URL.Path == "/login" {
-	//  http.Redirect(rw, r, "/openid/login", http.StatusFound)
-	//  return
-	//}
+	sess := middlewares.GetSession(r)
 
 	// overwrite grafana's logout
 	if r.URL.Path == "/logout" {
-		//TODO(illia) remove cookies and clear session here
-		//  delete(sess.Values, middlewares.OpenIDContextKey)
-		//  if err := sess.Save(r, rw); err != nil {
-		//    fmt.Fprintln(os.Stderr, err.Error())
-		log.Logger.Infof("Logging out user")
-		fmt.Fprintf(rw, "<h1>Bye bye</h1><div>%s</div>", "user1")
+		for k := range sess.Values {
+			delete(sess.Values, k)
+			sess.Save(r, rw)
+		}
+		log.Logger.Infof("Logging out user %s", sess.Values[SessionUsername])
+		http.Redirect(rw, r, "/", http.StatusFound)
 		return
 	}
 
 	log.Logger.Debugf("Proxying %s %s", r.Method, r.RequestURI)
 
-	// redirect to login url if openid not login
-	//email, ok := openid["sreg.email"]
-	//if !ok {
-	//  http.Redirect(rw, r, "/openid/login", http.StatusFound)
-	//  return
-	//}
+	if _, ok := sess.Values[SessionUsername]; !ok {
+		log.Logger.Errorf("%s key is expected to be defined in request "+
+			"context. Looks like incorrect usage of middleware", SessionUsername)
+		http.Error(rw, "Internal error", http.StatusInternalServerError)
+		return
+	}
 
-	// overwirte X-WEBAUTH-USER with openid email name
-	r.Header.Set(p.authHeader, "user1")
+	//header for Grafana according to http://docs.grafana.org/installation/configuration/#auth-proxy
+	r.Header.Set(p.authHeader, fmt.Sprintf("%s", sess.Values[SessionUsername]))
 
 	if p.requestLogging {
 		log.Logger.Debugf("Request dump  %v", r)
