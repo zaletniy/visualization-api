@@ -106,6 +106,21 @@ func adminRouter(clients *common.ClientContainer,
 	return r
 }
 
+func visualizationRouter(clients *common.ClientContainer,
+	handler common.HandlerInterface,
+	authMiddleware func(http.Handler) http.Handler) *chi.Mux {
+	router := chi.NewRouter()
+	// temporary commented to simplify testing
+	router.Use(authMiddleware)
+	router.Get("/visualizations", v1handlers.VisualizationsGet(
+		clients, handler))
+	router.Post("/visualizations", v1handlers.VisualizationsPost(
+		clients, handler))
+	router.Delete("/visualization/{visualizationID}", v1handlers.VisualizationDelete(
+		clients, handler))
+	return router
+}
+
 // InitializeRouter initializes /v1 routers
 func InitializeRouter(clients *common.ClientContainer,
 	handler common.HandlerInterface, secret string) *chi.Mux {
@@ -113,5 +128,6 @@ func InitializeRouter(clients *common.ClientContainer,
 	authMiddleware := httpAuth.AuthenticationMiddleware(secret)
 	router.Mount(adminAPIPrefix, adminRouter(clients, authMiddleware, handler, secret))
 	router.Mount(authPrefix, authRouter(clients, handler, secret))
+	router.Mount("/", visualizationRouter(clients, handler, authMiddleware))
 	return router
 }

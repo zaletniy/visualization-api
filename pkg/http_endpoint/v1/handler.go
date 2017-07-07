@@ -18,6 +18,7 @@ const TokenIssueHours = 3
 // V1Handler is implementation of Handler interface
 type V1Handler struct {
 	v1handlers.V1UsersOrgs
+	v1handlers.V1Visualizations
 }
 
 // AuthOpenstack uses provided keystone token to create jwt token
@@ -153,7 +154,7 @@ func (h *V1Handler) CreateUser(clients *common.ClientContainer, res []byte) erro
 	}
 
 	params := grafanaclient.AdminCreateUser{}
-	err = json.Unmarshal([]byte(res), &params)
+	err = json.Unmarshal(res, &params)
 	if err != nil {
 		log.Logger.Error(err)
 		return err
@@ -283,7 +284,7 @@ func (h *V1Handler) CreateOrganization(clients *common.ClientContainer, res []by
 		return err
 	}
 	params := grafanaclient.Org{}
-	err = json.Unmarshal([]byte(res), &params)
+	err = json.Unmarshal(res, &params)
 	if err != nil {
 		log.Logger.Error(err)
 		return err
@@ -303,7 +304,7 @@ func (h *V1Handler) CreateOrganizationUser(clients *common.ClientContainer, OrgI
 	}
 
 	params := grafanaclient.CreateOrganizationUser{}
-	err = json.Unmarshal([]byte(res), &params)
+	err = json.Unmarshal(res, &params)
 	if err != nil {
 		log.Logger.Error(err)
 		return err

@@ -5,7 +5,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"net/http"
 	"time"
-
+	"visualization-api/pkg/database/mock"
 	"visualization-api/pkg/grafanaclient/mock"
 	"visualization-api/pkg/http_endpoint/authentication"
 	"visualization-api/pkg/http_endpoint/common"
@@ -30,7 +30,8 @@ func InitializeLogger() {
 func MockClientContainer(mockCtrl *gomock.Controller) *common.ClientContainer {
 	mockedOpenstack := mock_openstack.NewMockClientInterface(mockCtrl)
 	mockedGrafana := mock_grafanaclient.NewMockSessionInterface(mockCtrl)
-	return &common.ClientContainer{mockedOpenstack, mockedGrafana}
+	mockedDatabaseManager := mock_database.NewMockDatabaseManager(mockCtrl)
+	return &common.ClientContainer{mockedOpenstack, mockedGrafana, mockedDatabaseManager}
 }
 
 // GetAuthToken returns admin token with expiration date in 2037
