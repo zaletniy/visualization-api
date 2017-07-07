@@ -38,6 +38,10 @@ const mysqlHostConfigName = "mysql.host"
 const mysqlUserConfigName = "mysql.username"
 const mysqlDatabaseConfigName = "mysql.database"
 
+const grafanaURLConfigName = "grafana.url"
+const grafanaUserConfigName = "grafana.username"
+const grafanaPasswordConfigName = "grafana.password"
+
 const httpPortConfigName = "http_endpoint.port"
 
 // #nosec <- linter thinks that secret is hardcoded, in fact it is setting name
@@ -73,6 +77,10 @@ type VisualizationAPIConfig struct {
 	OpenstackPassword string
 	OpenstackProject  string
 	OpenstackDomain   string
+
+	GrafanaURL      string
+	GrafanaUsername string
+	GrafanaPassword string
 }
 
 var (
@@ -94,6 +102,12 @@ var _ = flag.String(flagReplacer.Replace(mysqlUserConfigName), "",
 	"Username to authenticate on mysql server")
 var _ = flag.String(flagReplacer.Replace(mysqlDatabaseConfigName), "",
 	"Database to use on mysql server")
+var _ = flag.String(flagReplacer.Replace(grafanaURLConfigName), "",
+	"URL for Grafana server")
+var _ = flag.String(flagReplacer.Replace(grafanaUserConfigName), "",
+	"Username for Grafana server")
+var _ = flag.String(flagReplacer.Replace(grafanaPasswordConfigName), "",
+	"Password for Grafana server")
 var _ = flag.Bool("debug", false, "display debug messages in stdout")
 var _ = flag.Int(flagReplacer.Replace(httpPortConfigName), 0,
 	"Port to serve http API")
@@ -120,6 +134,9 @@ func initializeCommandLineFlags() error {
 		mysqlUserConfigName,
 		mysqlDatabaseConfigName,
 		mysqlPasswordConfigName,
+		grafanaURLConfigName,
+		grafanaUserConfigName,
+		grafanaPasswordConfigName,
 		httpPortConfigName,
 		httpSecretConfigName,
 		openstackAuthURLConfigName,
@@ -283,6 +300,37 @@ func parseOpenstackValues() error {
 	return nil
 }
 
+func parseGrafanaValues() error {
+	// parseLoggingValues aggregates logic for getting values from viper
+	// framework. Parsing options by groups reduces cyclomatic complexity of
+	// InitializeConfig function
+	grafanaURLConfigValue := viper.GetString(
+		grafanaURLConfigName)
+	if grafanaURLConfigValue == "" {
+		return NewParseError(
+			"grafanaUrl", "url", "grafana", "GRAFANA_URL", "--grafana-url")
+	}
+	singleToneConfig.GrafanaURL = grafanaURLConfigValue
+
+	grafanaUserConfigValue := viper.GetString(
+		grafanaUserConfigName)
+	if grafanaUserConfigValue == "" {
+		return NewParseError(
+			"grafanaUser", "username", "grafana", "GRAFANA_USERNAME", "--grafana-username")
+	}
+	singleToneConfig.GrafanaUsername = grafanaUserConfigValue
+
+	grafanaPasswordConfigValue := viper.GetString(
+		grafanaPasswordConfigName)
+	if grafanaPasswordConfigValue == "" {
+		return NewParseError(
+			"grafanaPassword", "password", "grafana", "GRAFANA_PASSSWORD", "--grafana-password")
+	}
+	singleToneConfig.GrafanaPassword = grafanaPasswordConfigValue
+
+	return nil
+}
+
 // InitializeConfig parses application configuration from config file, env
 // variables and console flags. parsed configs are stored in module level variable
 func InitializeConfig() error {
@@ -331,6 +379,10 @@ func InitializeConfig() error {
 		return err
 	}
 	err = parseOpenstackValues()
+	if err != nil {
+		return err
+	}
+	err = parseGrafanaValues()
 	if err != nil {
 		return err
 	}

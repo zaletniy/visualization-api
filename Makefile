@@ -45,17 +45,21 @@ fmt:
 
 lint:
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --disable=gotype \
-		  --disable=errcheck --disable=gas --exclude=mock --exclude=Mock ./pkg/...
+		  --disable=errcheck --disable=gas --exclude=mock --exclude=Mock \
+		  --exclude='dynamic type' ./pkg/...
 
 generate-mocks:
 	mkdir -p ./pkg/openstack/mock
 	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/openstack/mock/mock.go visualization-api/pkg/openstack ClientInterface
 	mkdir -p ./pkg/http_endpoint/common/mock
 	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/http_endpoint/common/mock/mock.go visualization-api/pkg/http_endpoint/common HandlerInterface,ClockInterface
+	mkdir -p ./pkg/grafanaclient/mock
+	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/grafanaclient/mock/mock.go visualization-api/pkg/grafanaclient SessionInterface
 
 clean-mocks:
 	rm -r ./pkg/openstack/mock
 	rm -r ./pkg/http_endpoint/common/mock
+	rm -r ./pkg/grafanaclient/mock
 
 test: generate-mocks
 	$(GO) test ./pkg/...

@@ -21,17 +21,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
 )
 
 const timeout = 5
+const grafanaOrgHeader = "X-Grafana-Org-Id"
 
 // SessionInterface Interface with all method definations
 type SessionInterface interface {
 	DoLogon() error
+	GetOrCreateOrgByName(string) (*OrgID, error)
 	CreateDataSource(DataSource) error
 	GetDataSourceName(string) (DataSource, error)
 	DeleteDataSource(DataSource) error
@@ -42,11 +44,13 @@ type SessionInterface interface {
 	CreateUser(AdminCreateUser) error
 	DeleteUser(User) error
 	GetOrgs() ([]OrgList, error)
-	CreateOrg(Org) error
+	CreateOrg(Org) (*OrgID, error)
 	GetOrgID(int) (OrgID, error)
 	DeleteOrg(OrgList) error
 	GetOrgUsers(OrgList) ([]OrgUserList, error)
 	CreateOrgUser(AdminCreateUser, CreateUserInOrg, OrgList) error
+	UploadDashboard([]byte, string, bool) (string, error)
+	DeleteDashboard(string, string) error
 	DeleteOrgUser(User) error
 }
 
@@ -181,23 +185,53 @@ type UserID struct {
 }
 
 // NewSession It returns a Session struct pointer.
-func NewSession(user string, password string, url string) *Session {
+func NewSession(user string, password string, url string) (*Session, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return &Session{client: &http.Client{Jar: jar, Timeout: time.Second * timeout}, User: user, Password: password, url: url}
+	return &Session{client: &http.Client{Jar: jar, Timeout: time.Second * timeout}, User: user, Password: password, url: url}, nil
+}
+
+func (s *Session) reauth() bool {
+	err := s.DoLogon()
+	return err == nil
 }
 
 // httpRequest handle the request to Grafana server.
 //It returns the response body and a error if something went wrong
 func (s *Session) httpRequest(method string, url string, body io.Reader) (result io.Reader, err error) {
-	request, err := http.NewRequest(method, url, body)
+	return s.doHTTPRequest(method, url, body, nil)
+}
+
+func (s *Session) httpRequestWithOrgHeader(method, url, orgID string, body io.Reader) (
+	result io.Reader, err error) {
+	return s.doHTTPRequest(method, url, body, &map[string]string{grafanaOrgHeader: orgID})
+}
+
+func (s *Session) doHTTPRequest(method, url string, body io.Reader,
+	additionalHeaders *map[string]string) (result io.Reader, err error) {
+
+	// copy of original reader is taken, because on 401 reauth is performed
+	// and request is repeated after authentication
+	var bodyOrigReader io.Reader
+	var bodyCopyReader io.Reader
+	if body != nil {
+		bodyBuffer, _ := ioutil.ReadAll(body)
+		bodyOrigReader = bytes.NewBuffer(bodyBuffer)
+		bodyCopyReader = bytes.NewBuffer(bodyBuffer)
+	}
+	request, err := http.NewRequest(method, url, bodyOrigReader)
 	if err != nil {
 		return result, err
 	}
 	request.Header.Set("Content-Type", "application/json")
+	if additionalHeaders != nil {
+		for headerName, headerValue := range *additionalHeaders {
+			request.Header.Set(headerName, headerValue)
+		}
+	}
 
 	response, err := s.client.Do(request)
 	if err != nil {
@@ -206,6 +240,11 @@ func (s *Session) httpRequest(method string, url string, body io.Reader) (result
 
 	//	defer response.Body.Close()
 	if response.StatusCode != 200 {
+		if response.StatusCode == 401 {
+			if s.reauth() {
+				return s.doHTTPRequest(method, url, bodyCopyReader, additionalHeaders)
+			}
+		}
 		dec := json.NewDecoder(response.Body)
 		var gMess GrafanaMessage
 		err := dec.Decode(&gMess)
@@ -215,8 +254,7 @@ func (s *Session) httpRequest(method string, url string, body io.Reader) (result
 
 		return result, GrafanaError{response.StatusCode, gMess.Message}
 	}
-	result = response.Body
-	return
+	return response.Body, nil
 }
 
 // DoLogon uses  a new http connection using the credentials stored in the Session struct.
@@ -380,16 +418,63 @@ func (s *Session) GetOrgs() (org []OrgList, err error) {
 }
 
 // CreateOrg creates a organization
-func (s *Session) CreateOrg(org Org) (err error) {
+func (s *Session) CreateOrg(org Org) (orgID *OrgID, err error) {
 	reqURL := s.url + "/api/orgs"
 	jsonStr, err := json.Marshal(org)
 	if err != nil {
 		return
 	}
+	body, err := s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return nil, err
+	}
 
-	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
-
+	var response struct {
+		OrgID   int    `json:"orgId"`
+		Message string `json:"message"`
+	}
+	dec := json.NewDecoder(body)
+	err = dec.Decode(&response)
+	orgID = &OrgID{}
+	orgID.ID = response.OrgID
+	orgID.Name = org.Name
 	return
+}
+
+func (s *Session) getOrgByName(name string) (*OrgID, error) {
+	reqURL := fmt.Sprintf("%s/api/orgs/name/%s", s.url, name)
+	body, err := s.httpRequest("GET", reqURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	orgID := &OrgID{}
+	dec := json.NewDecoder(body)
+	err = dec.Decode(orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return orgID, nil
+}
+
+// GetOrCreateOrgByName makes sure that organization exists and returns it's data with id
+func (s *Session) GetOrCreateOrgByName(name string) (*OrgID, error) {
+	// try to get organization with provided name
+	org, err := s.getOrgByName(name)
+	if err != nil {
+		{
+			switch err.(type) {
+			case GrafanaError:
+				if err.(GrafanaError).Code == 404 {
+					return s.CreateOrg(Org{name})
+				}
+				return nil, err
+			default:
+				return nil, err
+			}
+		}
+	}
+	return org, err
 }
 
 // GetOrgID Get Org by ID
@@ -466,5 +551,49 @@ func (s *Session) DeleteOrgUser(user User) (err error) {
 
 	_, err = s.httpRequest("DELETE", reqURL, bytes.NewBuffer(jsonStr))
 
+	return
+}
+
+// UploadDashboard upload a new Dashboard.
+func (s *Session) UploadDashboard(dashboard []byte, orgID string, overwrite bool) (
+	slug string, err error) {
+	reqURL := s.url + "/api/dashboards/db"
+
+	var content struct {
+		Dashboard map[string]interface{} `json:"dashboard"`
+		Overwrite bool                   `json:"overwrite"`
+	}
+
+	err = json.Unmarshal(dashboard, &content.Dashboard)
+	if err != nil {
+		return
+	}
+	content.Overwrite = overwrite
+	jsonStr, err := json.Marshal(content)
+	if err != nil {
+		return
+	}
+
+	body, err := s.httpRequestWithOrgHeader("POST", reqURL, orgID, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return "", err
+	}
+	var result struct {
+		Slug    string `json:"slug"`
+		Status  string `json:"success"`
+		Version int    `json:"version"`
+	}
+	dec := json.NewDecoder(body)
+	err = dec.Decode(&result)
+	if err != nil {
+		return "", err
+	}
+	return result.Slug, nil
+}
+
+// DeleteDashboard delete a Grafana Dashboard.
+func (s *Session) DeleteDashboard(slug, orgID string) (err error) {
+	reqURL := fmt.Sprintf("%s/api/dashboards/db/%s", s.url, slug)
+	_, err = s.httpRequestWithOrgHeader("DELETE", reqURL, orgID, nil)
 	return
 }

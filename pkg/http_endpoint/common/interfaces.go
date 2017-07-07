@@ -2,6 +2,7 @@ package common
 
 import (
 	"time"
+	"visualization-api/pkg/grafanaclient"
 	"visualization-api/pkg/openstack"
 )
 
@@ -9,6 +10,7 @@ import (
 It was created to have mockable architecture*/
 type ClientContainer struct {
 	Openstack openstack.ClientInterface
+	Grafana   grafanaclient.SessionInterface
 }
 
 /*HandlerInterface represents set of handlers for api

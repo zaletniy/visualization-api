@@ -1,6 +1,7 @@
 package httpAuth
 
 import (
+	"context"
 	"github.com/auth0/go-jwt-middleware"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
@@ -100,6 +101,13 @@ func AuthenticationMiddleware(secret string) func(http.Handler) http.Handler {
 				// 401 code and error message is set in http response by
 				// jwtMiddleware, we have just to return response
 				return
+			}
+			storedToken := r.Context().Value(contextJWTProperty)
+			claims, err := parseJWTTokenClaims(storedToken.(*jwt.Token).Raw, secret)
+			if err == nil {
+				newRequest := r.WithContext(context.WithValue(r.Context(),
+					common.OrganizationIDContext, claims.ProjectID))
+				*r = *newRequest
 			}
 			next.ServeHTTP(w, r)
 		})

@@ -2,6 +2,7 @@ package v1Api
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 	"visualization-api/pkg/http_endpoint/authentication"
 	"visualization-api/pkg/http_endpoint/common"
@@ -36,8 +37,15 @@ func (h *V1Handler) AuthOpenstack(clients *common.ClientContainer,
 
 	expirationTime := clock.Now().Add(TokenIssueHours * time.Hour)
 
+	grafanaOrg, err := clients.Grafana.GetOrCreateOrgByName(
+		tokenInfo.ProjectName + "-" + tokenInfo.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	grafanaOrgID := strconv.Itoa(grafanaOrg.ID)
+
 	token, err := httpAuth.JWTTokenFromParams(secret, tokenInfo.IsAdmin(),
-		tokenInfo.ProjectID, expirationTime)
+		grafanaOrgID, expirationTime)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +60,7 @@ func (h *V1Handler) AuthOpenstack(clients *common.ClientContainer,
 	}
 
 	payload.JWT = token
-	payload.Token.OrganizationID = tokenInfo.ProjectID
+	payload.Token.OrganizationID = grafanaOrgID
 	payload.Token.ExpiresAt = expirationTime
 	payload.Token.IsAdmin = tokenInfo.IsAdmin()
 

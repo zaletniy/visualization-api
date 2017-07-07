@@ -8,10 +8,11 @@ const adminRoleName = "admin"
 
 // TokenInfo represents data parsed from openstack token
 type TokenInfo struct {
-	ID        string
-	ExpiresAt time.Time
-	Roles     []map[string]string
-	ProjectID string
+	ID          string
+	ExpiresAt   time.Time
+	Roles       []map[string]string
+	ProjectID   string
+	ProjectName string
 }
 
 // IsAdmin tries to find 'admin' role in Roles map
