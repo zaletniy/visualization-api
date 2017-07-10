@@ -8,8 +8,15 @@ import (
 // InvalidOpenstackToken Error
 type InvalidOpenstackToken struct{}
 
+// InvalidUsernamePassword Error
+type InvalidUsernamePassword struct{}
+
 func (e InvalidOpenstackToken) Error() string {
 	return "provided openstack token is not valid"
+}
+
+func (e InvalidUsernamePassword) Error() string {
+	return "Invalid username or password"
 }
 
 type errorResponse struct {

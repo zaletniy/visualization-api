@@ -58,8 +58,8 @@ generate-mocks:
 
 clean-mocks:
 	rm -r ./pkg/openstack/mock
-	rm -r ./pkg/http_endpoint/common/mock
 	rm -r ./pkg/grafanaclient/mock
+	rm -r ./pkg/http_endpoint/common/mock
 
 test: generate-mocks
 	$(GO) test ./pkg/...

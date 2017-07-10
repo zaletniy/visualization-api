@@ -28,7 +28,10 @@ var org = Org{Name: "testme"}
 
 var org_list = OrgList{ID: 1, Name: "Main Org."}
 
-var org_user = CreateUserInOrg{LoginOrEmail: "testme", Role: "Viewer"}
+var org_user = CreateOrganizationUser{Email: "test@me.com",
+	Login:    "test",
+	Name:     "test",
+	Password: "test"}
 
 var url = getenv("GRAFANA_URL")
 var user = getenv("GRAFANA_USER")
@@ -111,7 +114,7 @@ func Test_DeleteDataSource(t *testing.T) {
 	resDs, err := session.GetDataSourceName("testme")
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Getting Datasource details: %s", err))
 
-	err = session.DeleteDataSource(resDs)
+	err = session.DeleteDataSource(resDs.ID)
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Deleting: %s", err))
 }
 
@@ -164,7 +167,7 @@ func Test_DeleteUser(t *testing.T) {
 
 	for _, users := range resUsers {
 		if users.Name == "testme" {
-			err = session.DeleteUser(users)
+			err = session.DeleteUser(users.ID)
 			assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Deleting User :%s", err))
 		}
 	}
@@ -190,7 +193,7 @@ func Test_GetOrgs(t *testing.T) {
 	session, _ := NewSession(user, pass, url)
 	err := session.DoLogon()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Login: %s", err))
-	orglist, err := session.GetOrgs()
+	orglist, err := session.GetOrganizations()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one getting Organization: %s", err))
 	var check bool
 	for _, orgs := range orglist {
@@ -207,11 +210,11 @@ func Test_GetOrgID(t *testing.T) {
 	err := session.DoLogon()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Login: %s", err))
 
-	orglist, err := session.GetOrgs()
+	orglist, err := session.GetOrganizations()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one getting Organization: %s", err))
 	for _, orgs := range orglist {
 		if orgs.Name == "testme" {
-			resDs, _ := session.GetOrgID(orgs.ID)
+			resDs, _ := session.GetOrganizationID(orgs.ID)
 
 			assert.Equal(t, "testme", resDs.Name, "We are expecting to retrieve Org with ID 1 and didn't get it")
 		}
@@ -223,14 +226,22 @@ func Test_CreateOrgUser(t *testing.T) {
 	err := session.DoLogon()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Login: %s", err))
 
-	orglist, err := session.GetOrgs()
+	orglist, err := session.GetOrganizations()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one getting Organization: %s", err))
 	for _, orgs := range orglist {
 		if orgs.Name == "testme" {
-			err = session.CreateOrgUser(usr, org_user, orgs)
-			assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when creating user in org: %s", err))
+			session.CreateOrganizationUser(orgs.ID, org_user)
 		}
 	}
+	userlist, err := session.GetUsers()
+	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one getting Organization: %s", err))
+	var check bool
+	for _, users := range userlist {
+		if users.Name == "test" {
+			check = true
+		}
+	}
+	assert.Equal(t, true, check, "We didn't find the test user")
 }
 
 func Test_GetOrgUsers(t *testing.T) {
@@ -238,11 +249,11 @@ func Test_GetOrgUsers(t *testing.T) {
 	err := session.DoLogon()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Login: %s", err))
 
-	orglist, err := session.GetOrgUsers(org_list)
+	orglist, err := session.GetOrganizationUsers(org_list.ID)
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one getting users in Organization: %s", err))
 	var check bool
 	for _, orgs := range orglist {
-		if orgs.Login == "testme" {
+		if orgs.Login == "test" {
 			check = true
 		}
 	}
@@ -258,10 +269,17 @@ func Test_DeleteOrgUser(t *testing.T) {
 	resUsers, err := session.GetUsers()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Getting Users: %s", err))
 
+	resOrgs, err := session.GetOrganizations()
+	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Getting Orgs: %s", err))
+
 	for _, users := range resUsers {
-		if users.Name == "testme" {
-			err = session.DeleteUser(users)
-			assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Deleting User: %s", err))
+		if users.Name == "test" {
+			for _, orgs := range resOrgs {
+				if orgs.Name == "testme" {
+					err = session.DeleteOrganizationUser(users.ID, orgs.ID)
+					assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Deleting User: %s", err))
+				}
+			}
 		}
 	}
 }
@@ -271,12 +289,12 @@ func Test_DeleteOrg(t *testing.T) {
 	err := session.DoLogon()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Login: %s", err))
 
-	resOrgs, err := session.GetOrgs()
+	resOrgs, err := session.GetOrganizations()
 	assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Getting Orgs: %s", err))
 
 	for _, orgs := range resOrgs {
 		if orgs.Name == "testme" {
-			err = session.DeleteOrg(orgs)
+			err = session.DeleteOrganization(orgs.ID)
 			assert.Nil(t, err, fmt.Sprintf("We are expecting no error and got one when Deleting Org: %s", err))
 		}
 	}

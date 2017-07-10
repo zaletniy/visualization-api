@@ -116,7 +116,6 @@ func TestAuthHandler(t *testing.T) {
 		mockedOpenstack := clientContainer.Openstack.(*mock_openstack.MockClientInterface)
 		mockedOpenstack.EXPECT().ValidateToken(testCase.token).Return(
 			testCase.tokenValid, nil)
-
 		mockedClock := mock_common.NewMockClockInterface(mockCtrl)
 		if testCase.tokenValid {
 			mockedOpenstack.EXPECT().GetTokenInfo(testCase.token).Return(

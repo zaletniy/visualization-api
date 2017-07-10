@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/pressly/chi"
 	"net/http"
+
 	"visualization-api/pkg/http_endpoint/authentication"
 	"visualization-api/pkg/http_endpoint/common"
+	v1handlers "visualization-api/pkg/http_endpoint/v1/handlers"
 	"visualization-api/pkg/logging"
 )
 
@@ -56,18 +58,52 @@ func authRouter(clients *common.ClientContainer,
 	return router
 }
 
-func adminRouter(authMiddleware func(http.Handler) http.Handler, secret string) *chi.Mux {
-	router := chi.NewRouter()
-	router.Use(authMiddleware)
-	router.Use(httpAuth.AdminAuthenticationMiddleware(secret))
-	/*
-		router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			_, err := w.Write([]byte("You are admin\n"))
-			if err != nil {
-			}
-		})
-	*/
-	return router
+func adminRouter(clients *common.ClientContainer,
+	authMiddleware func(http.Handler) http.Handler,
+	handler common.HandlerInterface, secret string) *chi.Mux {
+	r := chi.NewRouter()
+	r.Use(authMiddleware)
+	r.Use(httpAuth.AdminAuthenticationMiddleware(secret))
+
+	// routes for users
+	r.Route("/users", func(r chi.Router) {
+		// Get users list
+		r.Get("/", v1handlers.GetUsers(clients, handler))
+
+		// Get users  by id
+		r.Get("/{userID}", v1handlers.GetUsersID(clients, handler))
+
+		// Delete users by id
+		r.Delete("/{userID}", v1handlers.DeleteUser(clients, handler))
+
+		// Create user
+		r.Post("/", v1handlers.CreateUser(clients, handler))
+	})
+
+	// routes for organizations
+	r.Route("/organizations", func(r chi.Router) {
+		// Get organizations list
+		r.Get("/", v1handlers.GetOrganization(clients, handler))
+
+		// Get organization by id
+		r.Get("/{organizationID}", v1handlers.GetOrganizationID(clients, handler))
+
+		// Delete organizations by id
+		r.Delete("/{organizationID}", v1handlers.DeleteOrganization(clients, handler))
+
+		// Create organization
+		r.Post("/", v1handlers.CreateOrganization(clients, handler))
+
+		// Delete user in organizations by id
+		r.Delete("/{organizationID}/users/{userID}", v1handlers.DeleteOrganizationUser(clients, handler))
+
+		// Get users in organization
+		r.Get("/{organizationID}/users", v1handlers.GetOrganizationUser(clients, handler))
+
+		// Post create user in organization
+		r.Post("/{organizationID}/users", v1handlers.CreateOrganizationUser(clients, handler))
+	})
+	return r
 }
 
 // InitializeRouter initializes /v1 routers
@@ -75,7 +111,7 @@ func InitializeRouter(clients *common.ClientContainer,
 	handler common.HandlerInterface, secret string) *chi.Mux {
 	router := chi.NewRouter()
 	authMiddleware := httpAuth.AuthenticationMiddleware(secret)
-	router.Mount(adminAPIPrefix, adminRouter(authMiddleware, secret))
+	router.Mount(adminAPIPrefix, adminRouter(clients, authMiddleware, handler, secret))
 	router.Mount(authPrefix, authRouter(clients, handler, secret))
 	return router
 }

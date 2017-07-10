@@ -36,27 +36,27 @@ type SessionInterface interface {
 	GetOrCreateOrgByName(string) (*OrgID, error)
 	CreateDataSource(DataSource) error
 	GetDataSourceName(string) (DataSource, error)
-	DeleteDataSource(DataSource) error
+	DeleteDataSource(int) error
 	GetDataSourceList() ([]DataSource, error)
 	GetDataSourceListID(int) (DataSource, error)
 	GetUsers() ([]User, error)
-	GetUserID(int) (UserID, error)
+	GetUserID(int) (User, error)
 	CreateUser(AdminCreateUser) error
-	DeleteUser(User) error
-	GetOrgs() ([]OrgList, error)
-	CreateOrg(Org) (*OrgID, error)
-	GetOrgID(int) (OrgID, error)
-	DeleteOrg(OrgList) error
-	GetOrgUsers(OrgList) ([]OrgUserList, error)
-	CreateOrgUser(AdminCreateUser, CreateUserInOrg, OrgList) error
+	DeleteUser(int) error
+	GetOrganizations() ([]OrgList, error)
+	CreateOrganization(Org) error
+	GetOrganizationID(int) (OrgList, error)
+	DeleteOrganization(int) error
+	GetOrganizationUsers(int) ([]OrgUserList, error)
+	CreateOrganizationUser(int, CreateOrganizationUser) error
 	UploadDashboard([]byte, string, bool) (string, error)
 	DeleteDashboard(string, string) error
-	DeleteOrgUser(User) error
+	DeleteOrganizationUser(int, int) error
 }
 
 // GrafanaError is a error structure to handle error messages in this library
 type GrafanaError struct {
-	Code        int
+	Response    *http.Response
 	Description string
 }
 
@@ -65,11 +65,25 @@ type GrafanaMessage struct {
 	Message string `json:"message"`
 }
 
+// Exists Error
+type Exists struct{}
+
+// NotFound Error
+type NotFound struct{}
+
+func (e Exists) Error() string {
+	return "name taken"
+}
+
+func (e NotFound) Error() string {
+	return "not found"
+}
+
 // Error generate a text error message.
 // If Code is zero, we know it's not a http error.
 func (h GrafanaError) Error() string {
-	if h.Code != 0 {
-		return fmt.Sprintf("HTTP %d: %s", h.Code, h.Description)
+	if h.Response.StatusCode != 0 {
+		return fmt.Sprintf("HTTP %d: %s", h.Response.StatusCode, h.Description)
 	}
 	return fmt.Sprintf("ERROR: %s", h.Description)
 }
@@ -112,23 +126,16 @@ type OrgUserList struct {
 	UserID int    `json:"userID"`
 	Login  string `json:"login"`
 	Role   string `json:"role"`
+	Email  string `json:"email"`
 }
 
-// CreateUserInOrg Creates User in organization
-type CreateUserInOrg struct {
-	LoginOrEmail string `json:"loginOrEmail"`
-	Role         string `json:"role"`
-}
-
-// OrgList Get organization list
-type OrgList struct {
-	ID   int    `json:"ID"`
-	Name string `json:"name"`
-}
-
-// Org Create organization
-type Org struct {
-	Name string `json:"name"`
+// CreateOrganizationUser create user in organization
+type CreateOrganizationUser struct {
+	Login    string `json:"login"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
+	Name     string `json:"name"`
+	Password string `json:"password" binding:"Required"`
 }
 
 // OrgID Org by ID List
@@ -146,6 +153,17 @@ type AddressJSON struct {
 	ZipCode  string `json:"zipCode"`
 	State    string `json:"state"`
 	Country  string `json:"country"`
+}
+
+// OrgList Get organization list
+type OrgList struct {
+	ID   int    `json:"ID"`
+	Name string `json:"name"`
+}
+
+// Org Create organization
+type Org struct {
+	Name string `json:"name"`
 }
 
 // OrgUsers List of all users in organization
@@ -167,21 +185,10 @@ type AdminCreateUser struct {
 
 // User gets Users List
 type User struct {
-	ID      int    `json:"ID"`
-	Email   string `json:"email"`
-	Name    string `json:"name"`
-	Login   string `json:"login"`
-	IsAdmin bool   `json:"isAdmin"`
-}
-
-// UserID gets Users by ID List
-type UserID struct {
-	OrgID          int    `json:"orgID"`
-	Email          string `json:"email"`
-	Name           string `json:"name"`
-	Login          string `json:"login"`
-	Theme          string `json:"theme"`
-	IsGrafanaAdmin bool   `json:"isGrafanaAdmin"`
+	ID    int    `json:"ID"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	Login string `json:"login"`
 }
 
 // NewSession It returns a Session struct pointer.
@@ -252,7 +259,7 @@ func (s *Session) doHTTPRequest(method, url string, body io.Reader,
 			return result, err
 		}
 
-		return result, GrafanaError{response.StatusCode, gMess.Message}
+		return result, GrafanaError{response, gMess.Message}
 	}
 	return response.Body, nil
 }
@@ -309,11 +316,11 @@ func (s *Session) GetDataSourceName(name string) (ds DataSource, err error) {
 // DeleteDataSource deletes a Grafana DataSource.
 // It take a existing DataSource struct in parameter.
 // It returns a error if it cannot perform the deletion.
-func (s *Session) DeleteDataSource(ds DataSource) (err error) {
+func (s *Session) DeleteDataSource(ID int) (err error) {
 
-	reqURL := fmt.Sprintf("%s/api/datasources/%d", s.url, ds.ID)
+	reqURL := fmt.Sprintf("%s/api/datasources/%d", s.url, ID)
 
-	jsonStr, err := json.Marshal(ds)
+	jsonStr, err := json.Marshal(ID)
 	if err != nil {
 		return
 	}
@@ -367,11 +374,21 @@ func (s *Session) GetUsers() (user []User, err error) {
 }
 
 // GetUserID Get User by ID
-func (s *Session) GetUserID(ID int) (userID UserID, err error) {
+func (s *Session) GetUserID(ID int) (userID User, err error) {
 	reqURL := fmt.Sprintf("%s/api/users/%d", s.url, ID)
 	body, err := s.httpRequest("GET", reqURL, nil)
+
 	if err != nil {
-		return
+		switch err.(type) {
+		case GrafanaError:
+			if err.(GrafanaError).Response.StatusCode == 500 {
+				err.(GrafanaError).Response.StatusCode = 404
+				return User{}, NotFound{}
+			}
+			return User{}, err
+		default:
+			return User{}, err
+		}
 	}
 	dec := json.NewDecoder(body)
 	err = dec.Decode(&userID)
@@ -388,13 +405,26 @@ func (s *Session) CreateUser(user AdminCreateUser) (err error) {
 
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 
+	if err != nil {
+		switch err.(type) {
+		case GrafanaError:
+			if err.(GrafanaError).Response.StatusCode == 500 {
+				err.(GrafanaError).Response.StatusCode = 404
+				return Exists{}
+			}
+			return err
+		default:
+			return err
+		}
+	}
+
 	return
 }
 
 // DeleteUser Delete the user with given id
-func (s *Session) DeleteUser(user User) (err error) {
-	reqURL := fmt.Sprintf("%s/api/admin/users/%d", s.url, user.ID)
-	jsonStr, err := json.Marshal(user)
+func (s *Session) DeleteUser(ID int) (err error) {
+	reqURL := fmt.Sprintf("%s/api/admin/users/%d", s.url, ID)
+	jsonStr, err := json.Marshal(ID)
 	if err != nil {
 		return
 	}
@@ -404,40 +434,45 @@ func (s *Session) DeleteUser(user User) (err error) {
 	return
 }
 
-// GetOrgs returns list of organizations
-func (s *Session) GetOrgs() (org []OrgList, err error) {
+// GetOrganizations returns list of organizations
+func (s *Session) GetOrganizations() (org []OrgList, err error) {
 	reqURL := s.url + "/api/orgs"
 	body, err := s.httpRequest("GET", reqURL, nil)
 
 	if err != nil {
 		return
 	}
+
 	dec := json.NewDecoder(body)
 	err = dec.Decode(&org)
+	if err != nil {
+		return
+	}
 	return
 }
 
-// CreateOrg creates a organization
-func (s *Session) CreateOrg(org Org) (orgID *OrgID, err error) {
+// CreateOrganization creates a organization
+func (s *Session) CreateOrganization(org Org) (err error) {
 	reqURL := s.url + "/api/orgs"
 	jsonStr, err := json.Marshal(org)
 	if err != nil {
 		return
 	}
-	body, err := s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
+
+	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
 	if err != nil {
-		return nil, err
+		switch err.(type) {
+		case GrafanaError:
+			if err.(GrafanaError).Response.StatusCode == 400 {
+				err.(GrafanaError).Response.StatusCode = 409
+				return Exists{}
+			}
+			return err
+		default:
+			return err
+		}
 	}
 
-	var response struct {
-		OrgID   int    `json:"orgId"`
-		Message string `json:"message"`
-	}
-	dec := json.NewDecoder(body)
-	err = dec.Decode(&response)
-	orgID = &OrgID{}
-	orgID.ID = response.OrgID
-	orgID.Name = org.Name
 	return
 }
 
@@ -465,7 +500,7 @@ func (s *Session) GetOrCreateOrgByName(name string) (*OrgID, error) {
 		{
 			switch err.(type) {
 			case GrafanaError:
-				if err.(GrafanaError).Code == 404 {
+				if err.(GrafanaError).Response.StatusCode == 404 {
 					return s.CreateOrg(Org{name})
 				}
 				return nil, err
@@ -477,22 +512,55 @@ func (s *Session) GetOrCreateOrgByName(name string) (*OrgID, error) {
 	return org, err
 }
 
-// GetOrgID Get Org by ID
-func (s *Session) GetOrgID(ID int) (orgID OrgID, err error) {
-	reqURL := fmt.Sprintf("%s/api/orgs/%d", s.url, ID)
-	body, err := s.httpRequest("GET", reqURL, nil)
+// CreateOrg creates a organization
+func (s *Session) CreateOrg(org Org) (orgID *OrgID, err error) {
+	reqURL := s.url + "/api/orgs"
+	jsonStr, err := json.Marshal(org)
 	if err != nil {
 		return
+	}
+	body, err := s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		return nil, err
+	}
+
+	var response struct {
+		OrgID   int    `json:"orgId"`
+		Message string `json:"message"`
+	}
+	dec := json.NewDecoder(body)
+	err = dec.Decode(&response)
+	orgID = &OrgID{}
+	orgID.ID = response.OrgID
+	orgID.Name = org.Name
+	return
+}
+
+// GetOrganizationID Get Org by ID
+func (s *Session) GetOrganizationID(OrgID int) (orgID OrgList, err error) {
+	reqURL := fmt.Sprintf("%s/api/orgs/%d", s.url, OrgID)
+	body, err := s.httpRequest("GET", reqURL, nil)
+
+	if err != nil {
+		switch err.(type) {
+		case GrafanaError:
+			if err.(GrafanaError).Response.StatusCode == 404 {
+				return OrgList{}, NotFound{}
+			}
+			return OrgList{}, err
+		default:
+			return OrgList{}, err
+		}
 	}
 	dec := json.NewDecoder(body)
 	err = dec.Decode(&orgID)
 	return
 }
 
-// DeleteOrg Delete the organization with given id
-func (s *Session) DeleteOrg(org OrgList) (err error) {
-	reqURL := fmt.Sprintf("%s/api/orgs/%d", s.url, org.ID)
-	jsonStr, err := json.Marshal(org)
+// DeleteOrganization Delete the organization with given id
+func (s *Session) DeleteOrganization(ID int) (err error) {
+	reqURL := fmt.Sprintf("%s/api/orgs/%d", s.url, ID)
+	jsonStr, err := json.Marshal(ID)
 	if err != nil {
 		return
 	}
@@ -502,49 +570,89 @@ func (s *Session) DeleteOrg(org OrgList) (err error) {
 	return
 }
 
-// GetOrgUsers gets Users in Organisation
-func (s *Session) GetOrgUsers(orgID OrgList) (org []OrgUserList, err error) {
-	reqURL := fmt.Sprintf("%s/api/orgs/%d/users", s.url, orgID.ID)
+// GetOrganizationUsers gets Users in Organisation
+func (s *Session) GetOrganizationUsers(ID int) (org []OrgUserList, err error) {
+	reqURL := fmt.Sprintf("%s/api/orgs/%d/users", s.url, ID)
 	body, err := s.httpRequest("GET", reqURL, nil)
 
 	if err != nil {
-		return
+		switch err.(type) {
+		case GrafanaError:
+			if err.(GrafanaError).Response.StatusCode == 404 {
+				return nil, NotFound{}
+			}
+			return nil, err
+		default:
+			return nil, err
+		}
 	}
 	dec := json.NewDecoder(body)
 	err = dec.Decode(&org)
 	return
 }
 
-// CreateOrgUser Add User in Organisation
-func (s *Session) CreateOrgUser(user AdminCreateUser, createOrguser CreateUserInOrg, org OrgList) (err error) {
+// CreateOrganizationUser Add User in Organisation
+func (s *Session) CreateOrganizationUser(OrgID int, user CreateOrganizationUser) (err error) {
 	// Create a user using Admin api and then add that user to organization
-	reqUserURL := s.url + "/api/admin/users"
-	jsonUsrStr, err := json.Marshal(user)
+	userCreate := AdminCreateUser{}
+	userCreate.Login = user.Login
+	userCreate.Email = user.Email
+	userCreate.Name = user.Name
+	userCreate.Password = user.Password
+
+	// Create user
+	err = s.CreateUser(userCreate)
 	if err != nil {
-		return
+		switch err.(type) {
+		case Exists:
+			return Exists{}
+		default:
+			return err
+		}
 	}
 
-	_, err = s.httpRequest("POST", reqUserURL, bytes.NewBuffer(jsonUsrStr))
-	if err != nil {
-		return
+	var orguser struct {
+		LoginOrEmail string `json:"loginOrEmail"`
+		Role         string `json:"role"`
 	}
 
-	reqURL := fmt.Sprintf("%s/api/orgs/%d/users", s.url, org.ID)
-	jsonStr, err := json.Marshal(createOrguser)
+	orguser.LoginOrEmail = user.Login
+	orguser.Role = user.Role
+
+	reqURL := fmt.Sprintf("%s/api/orgs/%d/users", s.url, OrgID)
+	jsonStr, err := json.Marshal(orguser)
 	if err != nil {
 		return
 	}
 
 	_, err = s.httpRequest("POST", reqURL, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		switch err.(type) {
+		case GrafanaError:
+			if err.(GrafanaError).Response.StatusCode == 400 {
+				err.(GrafanaError).Response.StatusCode = 409
+				return Exists{}
+			}
+			return err
+		default:
+			return err
+		}
+	}
 
 	return
 }
 
-// DeleteOrgUser Delete User in Organisation
-func (s *Session) DeleteOrgUser(user User) (err error) {
+// DeleteOrganizationUser Delete User in Organisation
+func (s *Session) DeleteOrganizationUser(userID int, orgID int) (err error) {
 	// Deleting the user through admin api deletes that user from organization
-	reqURL := fmt.Sprintf("%s/api/admin/users/%d", s.url, user.ID)
-	jsonStr, err := json.Marshal(user)
+	reqURL := fmt.Sprintf("%s/api/orgs/%d/users/%d", s.url, orgID, userID)
+	var ID struct {
+		UserID int `json:"userID"`
+		OrgID  int `json:"orgID"`
+	}
+	ID.UserID = userID
+	ID.OrgID = orgID
+	jsonStr, err := json.Marshal(ID)
 	if err != nil {
 		return
 	}

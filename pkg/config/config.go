@@ -78,6 +78,7 @@ type VisualizationAPIConfig struct {
 	OpenstackProject  string
 	OpenstackDomain   string
 
+	// grafana settings
 	GrafanaURL      string
 	GrafanaUsername string
 	GrafanaPassword string
@@ -374,15 +375,15 @@ func InitializeConfig() error {
 	if err != nil {
 		return err
 	}
+	err = parseGrafanaValues()
+	if err != nil {
+		return err
+	}
 	err = parseHTTPEndpointValues()
 	if err != nil {
 		return err
 	}
 	err = parseOpenstackValues()
-	if err != nil {
-		return err
-	}
-	err = parseGrafanaValues()
 	if err != nil {
 		return err
 	}

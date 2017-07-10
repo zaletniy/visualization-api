@@ -17,6 +17,17 @@ type ClientContainer struct {
 It was created to have mockable architecture*/
 type HandlerInterface interface {
 	AuthOpenstack(*ClientContainer, ClockInterface, string, string) ([]byte, error)
+	GetUsers(*ClientContainer) ([]byte, error)
+	GetUserID(*ClientContainer, int) ([]byte, error)
+	DeleteUser(*ClientContainer, int) error
+	CreateUser(*ClientContainer, []byte) error
+	GetOrganizations(*ClientContainer) ([]byte, error)
+	GetOrganizationID(*ClientContainer, int) ([]byte, error)
+	DeleteOrganization(*ClientContainer, int) error
+	CreateOrganization(*ClientContainer, []byte) error
+	CreateOrganizationUser(*ClientContainer, int, []byte) error
+	DeleteOrganizationUser(*ClientContainer, int, int) error
+	GetOrganizationUsers(*ClientContainer, int) ([]byte, error)
 }
 
 // ClockInterface serves for testing purposes of functions, that require time
