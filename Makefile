@@ -46,7 +46,7 @@ fmt:
 
 lint:
 	GOPATH=$(GOPATH) $(GOPATH)/bin/gometalinter.v1 --disable=gotype \
-		  --disable=errcheck --disable=gas --disable=gocycle --exclude=mock --exclude=Mock \
+		  --disable=errcheck --disable=gas --disable=gocyclo --exclude=mock --exclude=Mock \
 		  --exclude='dynamic type' ./pkg/...
 
 generate-mocks:

@@ -1,23 +1,28 @@
 package proxy
 
 import (
-  "encoding/gob"
-  "time"
+	"encoding/gob"
+	"time"
 )
 
 // SessionUsername key used for storing username in request context
 const SessionUsername = "USERNAME"
+
 // OrgAndUserStateExpiresAt for cache expiration time
 const OrgAndUserStateExpiresAt = "ORG_AND_USER_STATE_EXPIRES_AT"
+
 // GrafanaUpdateCommandSessionKey key used for storing GrafanaUpdateCommand in request context
 const GrafanaUpdateCommandSessionKey = "GRAFANA_UPDATE_COMMAND"
 
 //GrafanaRoleAdmin Admin
 const GrafanaRoleAdmin = "Admin"
+
 //GrafanaRoleReadOnlyEditor ReadOnlyEditor
 const GrafanaRoleReadOnlyEditor = "ReadOnlyEditor"
+
 //GrafanaRoleEditor Editor
 const GrafanaRoleEditor = "Editor"
+
 //GrafanaRoleViewer Viewer
 const GrafanaRoleViewer = "Viewer"
 
@@ -25,24 +30,25 @@ const GrafanaRoleViewer = "Viewer"
 const TimeFormat = time.RFC3339
 
 func init() {
-  //registering of model to store in session
-  gob.Register(GrafanaUpdateCommand{})
+	//registering of model to store in session
+	gob.Register(GrafanaUpdateCommand{})
 }
 
 // GrafanaUpdateCommand model for grafana roles for user
 type GrafanaUpdateCommand struct {
-  User          User
-  Organizations []Organization
+	User          User
+	Organizations []Organization
 }
 
 // Organization model
 type Organization struct {
-  Name string
-  Role string
+	Name string
+	Role string
 }
+
 // User model
 type User struct {
-  Login string
-  Name  string
-  Email string
+	Login string
+	Name  string
+	Email string
 }
