@@ -26,6 +26,12 @@ login_page="./etc/platformvisibility/auth_proxy/login.html"
 secret="eiw3oothee0ohGucieB0Gaequoh1rahfoh5phoob5ail7thowaiM2aej2iej8eeg"
 # cookies max age in seconds 172800 = 48h
 max_age=172800
+# how often grafana state should be compared with OpenStack Keystone state
+# in seconds 600 = 10m
+grafana_state_ttl= 600
+# OpenStack Keytone to Grafana roles mapping
+# TODO(illia) find a way how to have map in TOML if possible
+# role_mapping=[["admin", "Editor"], ["Member","ReadOnlyEditor"]]
 
 [log]
 path = "auth_proxy.log"
