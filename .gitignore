@@ -1,5 +1,7 @@
 .gopath/
+pkg/pkg
 build
 visualizationapi
+auth_proxy
 *.log
 *mock*
