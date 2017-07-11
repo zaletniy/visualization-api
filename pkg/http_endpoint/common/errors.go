@@ -19,6 +19,34 @@ func (e InvalidUsernamePassword) Error() string {
 	return "Invalid username or password"
 }
 
+// UserDataError means that data, provided by user is not valid
+type UserDataError struct {
+	Msg string
+}
+
+// NewUserDataError return new UserDataError
+func NewUserDataError(msg string) UserDataError {
+	return UserDataError{msg}
+}
+
+func (e UserDataError) Error() string {
+	return e.Msg
+}
+
+// ClientError means that error occured with client we depend on
+type ClientError struct {
+	Msg string
+}
+
+// NewClientError return new UserDataError
+func NewClientError(msg string) ClientError {
+	return ClientError{msg}
+}
+
+func (e ClientError) Error() string {
+	return e.Msg
+}
+
 type errorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

@@ -127,7 +127,7 @@ func main() {
 	errorInitializingAPI := endpoint.Serve(
 		CONF.JWTSecret,
 		CONF.HTTPPort,
-		&common.ClientContainer{openstackCli, grafanaSession},
+		&common.ClientContainer{openstackCli, grafanaSession, db.NewXORMManager()},
 	)
 	if errorInitializingAPI != nil {
 		exitWithError(errorInitializingAPI)
