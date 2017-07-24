@@ -1,5 +1,8 @@
 language: go
 
+env:
+  - VERSION=${TRAVIS_TAG:1}
+
 go:
   - 1.8.x
 
@@ -7,7 +10,6 @@ services:
   - docker
 
 before_install:
-  - VERSION=${TRAVIS_TAG:1}
   - make init
 
 script:
@@ -26,6 +28,7 @@ after_success:
     make docker-push;
     fi
   - if [ ! -z "$TRAVIS_TAG" ]; then
-    docker tag $DOCKER_USERNAME/visualization-api $DOCKER_USERNAME/visualization-api:${TRAVIS_TAG:1};
-    docker push $DOCKER_USERNAME/visualization-api:${TRAVIS_TAG:1};
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    docker tag $DOCKER_USERNAME/visualization-api $DOCKER_USERNAME/visualization-api:$VERSION;
+    docker push $DOCKER_USERNAME/visualization-api:$VERSION;
     fi
