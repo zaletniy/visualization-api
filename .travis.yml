@@ -24,3 +24,11 @@ after_success:
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
     make docker-push;
     fi
+
+deploy:
+  provider: script
+  script:
+    - docker tag $DOCKER_USERNAME/visualization-api $DOCKER_USERNAME/visualization-api:$TRAVIS_TAG
+    - docker push $DOCKER_USERNAME/visualization-api:$TRAVIS_TAG
+  on:
+    tags: true
