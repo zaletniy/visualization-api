@@ -1,7 +1,7 @@
 GOPATH=$(PWD)/.gopath
 GO=GOPATH=$(GOPATH) go
 GIT_SHA=$(shell git log -n 1 --pretty=format:%H)
-VERSION=1.0
+VERSION ?= 0.0.0
 PROJECT_NAME=$(notdir $(basename $(PWD)))
 CODE_SUBDIR=pkg
 DOCKER_USERNAME ?= docker_username
