@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/zaletniy/visualization-api.svg?branch=master)](https://travis-ci.org/zaletniy/visualization-api)
+
 Platform Visibility :: Visualization API
 =========================================
 Platform visibility component for management Grafana in multitenant way in

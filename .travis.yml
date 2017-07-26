@@ -1,7 +1,10 @@
 language: go
 
+env:
+  - VERSION=${TRAVIS_TAG:1}
+
 go:
-  - 1.7.x
+  - 1.8.x
 
 services:
   - docker
@@ -23,4 +26,9 @@ after_success:
   - if [ "$TRAVIS_BRANCH" == "master" ]; then
     docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
     make docker-push;
+    fi
+  - if [ ! -z "$TRAVIS_TAG" ]; then
+    docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD";
+    docker tag $DOCKER_USERNAME/visualization-api $DOCKER_USERNAME/visualization-api:$VERSION;
+    docker push $DOCKER_USERNAME/visualization-api:$VERSION;
     fi

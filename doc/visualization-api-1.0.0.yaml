@@ -143,6 +143,12 @@ paths:
           type: string
           required: false
           description: "Visualizaion name to filter by"
+        -
+          name: any_tag_name
+          in: query
+          type: string
+          required: false
+          description: "Visualizaion tag to filter by"
       responses:
         # Response code
         200:
@@ -163,7 +169,7 @@ paths:
           description: Visualization defintion to add
           required: true
           schema:
-            $ref: "#/definitions/Datasource"
+            $ref: "#/definitions/Visualization"
       responses:
         200:
           description: Successful response
@@ -593,6 +599,9 @@ definitions:
         type: array
         items:
           $ref: "#/definitions/Dashboard"
+      tags:
+        description: Visualization tags
+        type: object
   Token:
     type: object
     properties:

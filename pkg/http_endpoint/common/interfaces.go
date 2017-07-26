@@ -2,6 +2,7 @@ package common
 
 import (
 	"time"
+	"visualization-api/pkg/database"
 	"visualization-api/pkg/grafanaclient"
 	"visualization-api/pkg/openstack"
 )
@@ -9,8 +10,9 @@ import (
 /*ClientContainer represents container for storing different clients
 It was created to have mockable architecture*/
 type ClientContainer struct {
-	Openstack openstack.ClientInterface
-	Grafana   grafanaclient.SessionInterface
+	Openstack       openstack.ClientInterface
+	Grafana         grafanaclient.SessionInterface
+	DatabaseManager db.DatabaseManager
 }
 
 /*HandlerInterface represents set of handlers for api
@@ -28,6 +30,11 @@ type HandlerInterface interface {
 	CreateOrganizationUser(*ClientContainer, int, []byte) error
 	DeleteOrganizationUser(*ClientContainer, int, int) error
 	GetOrganizationUsers(*ClientContainer, int) ([]byte, error)
+	VisualizationsGet(*ClientContainer, string, string,
+		map[string]interface{}) (*[]VisualizationWithDashboards, error)
+	VisualizationsPost(*ClientContainer, VisualizationPOSTData, string) (
+		*VisualizationWithDashboards, error)
+	VisualizationDelete(*ClientContainer, string, string) (*VisualizationWithDashboards, error)
 }
 
 // ClockInterface serves for testing purposes of functions, that require time

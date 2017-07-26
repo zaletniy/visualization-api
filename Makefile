@@ -1,7 +1,7 @@
 GOPATH=$(PWD)/.gopath
 GO=GOPATH=$(GOPATH) go
 GIT_SHA=$(shell git log -n 1 --pretty=format:%H)
-VERSION=1.0
+VERSION := $(if $(VERSION),$(VERSION),0.0.0)
 PROJECT_NAME=$(notdir $(basename $(PWD)))
 CODE_SUBDIR=pkg
 DOCKER_USERNAME ?= docker_username
@@ -27,6 +27,9 @@ init:
 	$(GO) get github.com/mitchellh/mapstructure
 	$(GO) get github.com/golang/mock/gomock
 	$(GO) get github.com/golang/mock/mockgen
+	$(GO) get github.com/xeipuuv/gojsonschema
+	$(GO) get github.com/satori/go.uuid
+	$(GO) get -u github.com/ulule/deepcopier
 	$(GO) get -u gopkg.in/alecthomas/gometalinter.v1
 	$(GO) get github.com/rubenv/sql-migrate/...
 	$(GO) get github.com/shuaiming/mung
@@ -56,11 +59,14 @@ generate-mocks:
 	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/http_endpoint/common/mock/mock.go visualization-api/pkg/http_endpoint/common HandlerInterface,ClockInterface
 	mkdir -p ./pkg/grafanaclient/mock
 	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/grafanaclient/mock/mock.go visualization-api/pkg/grafanaclient SessionInterface
+	mkdir -p ./pkg/database/mock
+	GOPATH=$(GOPATH) $(GOPATH)/bin/mockgen -destination ./pkg/database/mock/mock.go visualization-api/pkg/database DatabaseManager
 
 clean-mocks:
 	rm -r ./pkg/openstack/mock
 	rm -r ./pkg/grafanaclient/mock
 	rm -r ./pkg/http_endpoint/common/mock
+	rm -r ./pkg/database/mock
 
 test: generate-mocks
 	$(GO) test ./pkg/...
